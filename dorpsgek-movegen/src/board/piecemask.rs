@@ -17,7 +17,6 @@
 
 use super::{bitlist::Bitlist, index::PieceIndex};
 use crate::{colour::Colour, piece::Piece};
-use std::{convert::TryFrom, fmt::Debug};
 
 #[derive(Clone)]
 pub struct Piecemask {
@@ -27,7 +26,7 @@ pub struct Piecemask {
 }
 
 impl Piecemask {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             pbq: Bitlist::new(),
             nbk: Bitlist::new(),
@@ -115,6 +114,7 @@ impl Piecemask {
         }
     }
 
+    /// Add a piece to a Piecemask
     pub fn add_piece(&mut self, piece: Piece, colour: Colour) -> Option<PieceIndex> {
         if let Some(piece_index) = (self.empty() & Bitlist::mask_from_colour(colour)).peek() {
             let yes = Bitlist::from(piece_index);
@@ -139,8 +139,9 @@ impl Piecemask {
         }
     }
 
+    /// Remove a piece from a Piecemask.
     pub fn remove_piece(&mut self, piece_index: PieceIndex) {
-        debug_assert!(
+        assert!(
             self.occupied().contains(piece_index.into()),
             "attempted to remove invalid piece"
         );

@@ -26,7 +26,7 @@ pub struct Piecelist([Option<Square>; 32]);
 
 impl Piecelist {
     /// Create a new `Piecelist`.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self([None; 32])
     }
 

@@ -37,8 +37,7 @@ pub struct BoardData {
 
 impl BoardData {
     /// Create a new board.
-
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             bitlist: BitlistArray::new(),
             piecelist: Piecelist::new(),
@@ -47,10 +46,13 @@ impl BoardData {
         }
     }
 
+    #[doc(hidden)]
+    #[allow(dead_code)]
     pub fn bitlists(&self) -> BitlistArray {
         self.bitlist.clone()
     }
 
+    /// Return the piece index on a square, if any.
     pub fn piece_index(&self, square: Square) -> Option<PieceIndex> {
         self.index[square]
     }
@@ -257,10 +259,11 @@ impl BoardData {
             let attacker = self.piecelist[piece]
                 .expect("piecemask says there's a piece, but piecelist says there isn't");
             //println!("{} -> {}", attacker, square);
+            
+            assert!(attacker != square);
 
             let direction = attacker.direction(square);
 
-            assert!(attacker != square);
             assert!(
                 direction.is_some(),
                 "bitlist array says {} can attack {}, but Square::direction says you can't",
@@ -272,7 +275,6 @@ impl BoardData {
             #[allow(clippy::option_unwrap_used)]
             let direction = direction.unwrap();
 
-            //.expect();
             let mut square = square;
             while let Some(dest) = square.travel(direction) {
                 if add {

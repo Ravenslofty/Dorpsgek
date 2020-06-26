@@ -26,6 +26,7 @@ pub enum Piece {
 }
 
 impl From<Piece> for usize {
+    #[inline]
     fn from(piece: Piece) -> Self {
         match piece {
             Piece::King => 0,

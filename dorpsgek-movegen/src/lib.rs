@@ -18,16 +18,14 @@
 //#![forbid(unsafe_code)]
 #![forbid(missing_docs)]
 #![warn(warnings, rust_2018_idioms)]
-#![warn(clippy::all, clippy::pedantic, clippy::restriction, clippy::nursery)]
+#![warn(clippy::all, clippy::pedantic, clippy::restriction, clippy::nursery, clippy::perf)]
 #![allow(
     clippy::integer_arithmetic,
     clippy::float_arithmetic,
     clippy::integer_division,
     clippy::option_expect_used,
     clippy::result_expect_used,
-    clippy::shadow_reuse
-)]
-#![allow(
+    clippy::shadow_reuse,
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
     clippy::cast_possible_wrap,

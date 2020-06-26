@@ -6,7 +6,7 @@ pub fn perft_bench(c: &mut Criterion) {
         Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     c.bench_function("perft 4", |b| {
         b.iter(|| {
-            black_box(perft(&mut board, 4));
+            assert_eq!(perft(&mut board, 4), 197_281);
         })
     });
 }

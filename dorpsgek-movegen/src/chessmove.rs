@@ -51,7 +51,8 @@ impl Display for Move {
 }
 
 impl Move {
-    pub fn new(from: Square, dest: Square, kind: MoveType, prom: Option<Piece>) -> Self {
+    /// Create a new Move.
+    pub const fn new(from: Square, dest: Square, kind: MoveType, prom: Option<Piece>) -> Self {
         //assert!(dest != from);
         Self {
             from,

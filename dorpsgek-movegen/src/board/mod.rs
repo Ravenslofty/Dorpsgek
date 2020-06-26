@@ -58,12 +58,14 @@ pub struct Board {
 }
 
 impl Default for Board {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl Display for Board {
+    #[allow(clippy::missing_inline_in_public_items)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for i in 0_u8..64_u8 {
             let j = i ^ 56_u8;
@@ -127,8 +129,9 @@ impl Display for Board {
 
 impl Board {
     /// Create a new empty board.
-
-    pub fn new() -> Self {
+    #[must_use]
+    #[inline]
+    pub const fn new() -> Self {
         Self {
             side: Colour::White,
             castle: 0,
@@ -138,6 +141,8 @@ impl Board {
     }
 
     /// Parse a position in Forsyth-Edwards Notation into a board.
+    #[must_use]
+    #[allow(clippy::missing_inline_in_public_items)]
     pub fn from_fen(fen: &str) -> Option<Self> {
         let fen = CString::new(fen).expect("FEN is not ASCII");
         let fen = fen.as_bytes();
@@ -145,6 +150,8 @@ impl Board {
     }
 
     /// Parse a position in Forsyth-Edwards Notation into a board.
+    #[must_use]
+    #[allow(clippy::missing_inline_in_public_items)]
     pub fn from_fen_bytes(fen: &[u8]) -> Option<Self> {
         let mut b = Self::new();
 
@@ -247,6 +254,7 @@ impl Board {
 
     /// Make a move on the board.
     #[must_use = "can't take back without the move state"]
+    #[allow(clippy::missing_inline_in_public_items)]
     pub fn make(&mut self, m: Move) -> MoveState {
         let move_state = MoveState {
             ep: self.ep,
@@ -283,6 +291,7 @@ impl Board {
     }
 
     /// Unmake a move on the board.
+    #[allow(clippy::missing_inline_in_public_items)]
     pub fn unmake(&mut self, m: Move, state: MoveState) {
         self.side = !self.side;
         self.ep = state.ep;
@@ -666,6 +675,7 @@ impl Board {
     }
 
     /// Generate a vector of moves on the board.
+    #[allow(clippy::missing_inline_in_public_items)]
     pub fn generate(&self, v: &mut ArrayVec<[Move; 256]>) {
         // Unless something has gone very badly wrong we have to have a king.
         let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))

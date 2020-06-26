@@ -46,6 +46,7 @@ impl Display for Rank {
 }
 
 impl From<Rank> for u8 {
+    #[inline]
     fn from(rank: Rank) -> Self {
         match rank {
             Rank::One => 0,
@@ -148,6 +149,7 @@ impl Display for File {
 }
 
 impl From<File> for u8 {
+    #[inline]
     fn from(file: File) -> Self {
         match file {
             File::A => 0,
@@ -275,7 +277,6 @@ impl TryFrom<u8> for Square {
 
 impl Square {
     /// Construct a `Square` from a `Rank` and `File`.
-
     pub fn from_rank_file(rank: Rank, file: File) -> Self {
         let rank = u8::from(rank);
         let file = u8::from(file);
@@ -289,33 +290,31 @@ impl Square {
     /// # Safety
     ///
     /// `sq` must be in the range 0-63.
-
-    pub unsafe fn from_u8_unchecked(sq: u8) -> Self {
+    pub const unsafe fn from_u8_unchecked(sq: u8) -> Self {
         Self(NonZeroU8::new_unchecked(sq + 1))
     }
 
     /// Return the internal `u8`.
-
-    pub fn into_inner(self) -> u8 {
+    pub const fn into_inner(self) -> u8 {
         // The "& 63" is to hint to the compiler that this will never be greater than it.
         (self.0.get() - 1) & 63
     }
 
     /// Return the `Direction` between two squares, if any exists.
-
     pub fn direction(self, dest: Self) -> Option<Direction> {
-        /// Lazily-initialised direction table using 16x12 coordinates.
+        /// Whether DIRECTIONS has been initialised.
         static mut INIT: bool = false;
+        /// Lazily-initialised direction table using 16x12 coordinates.
         static mut DIRECTIONS: [Option<Direction>; 240] = [None; 240];
 
         let to_16x12 = |sq: Self| ((16 * u8::from(Rank::from(sq))) + u8::from(File::from(sq)) + 36);
 
         unsafe {
             if !INIT {
-                let a1 = Square::from_rank_file(Rank::One, File::A);
-                let h1 = Square::from_rank_file(Rank::One, File::H);
-                let a8 = Square::from_rank_file(Rank::Eight, File::A);
-                let h8 = Square::from_rank_file(Rank::Eight, File::H);
+                let a1 = Self::from_rank_file(Rank::One, File::A);
+                let h1 = Self::from_rank_file(Rank::One, File::H);
+                let a8 = Self::from_rank_file(Rank::Eight, File::A);
+                let h8 = Self::from_rank_file(Rank::Eight, File::H);
 
                 let travel = |src, dir| {
                     let src_16x12 = to_16x12(src);
@@ -353,29 +352,34 @@ impl Square {
 
     /// Return the `Square` in a given `Direction`, if one exists.
     pub fn travel(self, direction: Direction) -> Option<Self> {
-        let rank = Rank::from(self);
-        let file = File::from(self);
+        /// 16x12 to 8x8 conversion table.
+        static FROM_16X12: [Option<u8>; 192] = [
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None, None, None, Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), Some(6), Some(7), None, None, None, None,
+            None, None, None, None, Some(8), Some(9), Some(10), Some(11), Some(12), Some(13), Some(14), Some(15), None, None, None, None,
+            None, None, None, None, Some(16), Some(17), Some(18), Some(19), Some(20), Some(21), Some(22), Some(23), None, None, None, None,
+            None, None, None, None, Some(24), Some(25), Some(26), Some(27), Some(28), Some(29), Some(30), Some(31), None, None, None, None,
+            None, None, None, None, Some(32), Some(33), Some(34), Some(35), Some(36), Some(37), Some(38), Some(39), None, None, None, None,
+            None, None, None, None, Some(40), Some(41), Some(42), Some(43), Some(44), Some(45), Some(46), Some(47), None, None, None, None,
+            None, None, None, None, Some(48), Some(49), Some(50), Some(51), Some(52), Some(53), Some(54), Some(55), None, None, None, None,
+            None, None, None, None, Some(56), Some(57), Some(58), Some(59), Some(60), Some(61), Some(62), Some(63), None, None, None, None,
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,   
+        ];
 
-        let rank = match direction {
-            Direction::NorthWest | Direction::North | Direction::NorthEast => rank.north(),
-            Direction::SouthWest | Direction::South | Direction::SouthEast => rank.south(),
-            Direction::East | Direction::West => Some(rank),
-        }?;
+        let to_16x12 = |sq: Self| ((16 * u8::from(Rank::from(sq))) + u8::from(File::from(sq)) + 36);
 
-        let file = match direction {
-            Direction::NorthEast | Direction::East | Direction::SouthEast => file.east(),
-            Direction::NorthWest | Direction::West | Direction::SouthWest => file.west(),
-            Direction::North | Direction::South => Some(file),
-        }?;
+        let square = i16::from(to_16x12(self));
+        let square = *FROM_16X12.get(usize::from(square.wrapping_add(direction.to_16x12().into()) as u16))?;
 
-        Some(Self::from_rank_file(rank, file))
+        unsafe {
+            Some(Self::from_u8_unchecked(square?))
+        }
     }
 
     pub fn north(self) -> Option<Self> {
-        let rank = Rank::from(self).north()?;
-        let file = File::from(self);
-
-        Some(Self::from_rank_file(rank, file))
+        self.travel(Direction::North)
     }
 
     pub fn north_east(self) -> Option<Self> {
@@ -383,10 +387,7 @@ impl Square {
     }
 
     pub fn east(self) -> Option<Self> {
-        let rank = Rank::from(self);
-        let file = File::from(self).east()?;
-
-        Some(Self::from_rank_file(rank, file))
+        self.travel(Direction::East)
     }
 
     pub fn south_east(self) -> Option<Self> {
@@ -436,17 +437,17 @@ impl Square {
     }
 
     /// An iterator over the squares a knight attacks.
-    pub fn knight_attacks(self) -> KnightIter {
+    pub const fn knight_attacks(self) -> KnightIter {
         KnightIter(self, 0)
     }
 
     /// An iterator over the squares a king attacks.
-    pub fn king_attacks(self) -> KingIter {
+    pub const fn king_attacks(self) -> KingIter {
         KingIter(self, 0)
     }
 
     /// An iterator over the squares in a `Direction`.
-    pub fn ray_attacks(self, dir: Direction) -> RayIter {
+    pub const fn ray_attacks(self, dir: Direction) -> RayIter {
         RayIter(self, dir)
     }
 }
@@ -474,7 +475,6 @@ pub enum Direction {
 
 impl Direction {
     /// The `Direction` 180 degrees of the given `Direction`.
-
     pub fn opposite(self) -> Self {
         match self {
             Self::North => Self::South,
@@ -489,11 +489,24 @@ impl Direction {
     }
 
     /// Returns true if the direction is diagonal.
-
     pub fn diagonal(self) -> bool {
         match self {
             Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest => true,
             Self::North | Self::East | Self::South | Self::West => false,
+        }
+    }
+
+    /// Returns the 16x12 square difference of this Direction.
+    pub fn to_16x12(self) -> i8 {
+        match self {
+            Direction::North => 16,
+            Direction::NorthEast => 17,
+            Direction::East => 1,
+            Direction::SouthEast => -15,
+            Direction::South => -16,
+            Direction::SouthWest => -17,
+            Direction::West => -1,
+            Direction::NorthWest => 15,
         }
     }
 }
