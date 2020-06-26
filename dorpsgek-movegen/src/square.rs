@@ -301,56 +301,39 @@ impl Square {
     }
 
     /// Return the `Direction` between two squares, if any exists.
+    #[inline]
     pub fn direction(self, dest: Self) -> Option<Direction> {
-        /// Whether DIRECTIONS has been initialised.
-        static mut INIT: bool = false;
         /// Lazily-initialised direction table using 16x12 coordinates.
-        static mut DIRECTIONS: [Option<Direction>; 240] = [None; 240];
+        static DIRECTIONS: [Option<Direction>; 240] = [
+            Some(Direction::SouthWest), None, None, None, None, None, None, Some(Direction::South), None, None, None, None, None, None, Some(Direction::SouthEast), None, None, Some(Direction::SouthWest), None, None, None, None, None, Some(Direction::South), None, None, None, None, None, Some(Direction::SouthEast), None, None, None, None, Some(Direction::SouthWest), None, None, None, None, Some(Direction::South), None, None, None, None, Some(Direction::SouthEast), None, None, None, None, None, None, Some(Direction::SouthWest), None, None, None, Some(Direction::South), None, None, None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, Some(Direction::SouthWest), None, None, Some(Direction::South), None, None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, None, None, Some(Direction::SouthWest), None, Some(Direction::South), None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, None, None, None, None, Some(Direction::SouthWest), Some(Direction::South), Some(Direction::SouthEast), None, None, None, None, None, None, None, Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), None, Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), None, None, None, None, None, None, None, Some(Direction::NorthWest), Some(Direction::North), Some(Direction::NorthEast), None, None, None, None, None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, Some(Direction::North), None, Some(Direction::NorthEast), None, None, None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, None, Some(Direction::North), None, None, Some(Direction::NorthEast), None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, None, None, Some(Direction::North), None, None, None, Some(Direction::NorthEast), None, None, None, None, None, None, Some(Direction::NorthWest), None, None, None, None, Some(Direction::North), None, None, None, None, Some(Direction::NorthEast), None, None, None, None, Some(Direction::NorthWest), None, None, None, None, None, Some(Direction::North), None, None, None, None, None, Some(Direction::NorthEast), None, None, Some(Direction::NorthWest), None, None, None, None, None, None, Some(Direction::North), None, None, None, None, None, None, Some(Direction::NorthEast), None,
+        ];
 
-        let to_16x12 = |sq: Self| ((16 * u8::from(Rank::from(sq))) + u8::from(File::from(sq)) + 36);
+        static TO_16X12: [u8; 64] = [
+            36, 37, 38, 39, 40, 41, 42, 43,
+            52, 53, 54, 55, 56, 57, 58, 59,
+            68, 69, 70, 71, 72, 73, 74, 75,
+            84, 85, 86, 87, 88, 89, 90, 91,
+            100, 101, 102, 103, 104, 105, 106, 107,
+            116, 117, 118, 119, 120, 121, 122, 123,
+            132, 133, 134, 135, 136, 137, 138, 139,
+            148, 149, 150, 151, 152, 153, 154, 155,
+        ];
+
+        //let to_16x12 = |sq: Self| ((16 * u8::from(Rank::from(sq))) + u8::from(File::from(sq)) + 36);
 
         unsafe {
-            if !INIT {
-                let a1 = Self::from_rank_file(Rank::One, File::A);
-                let h1 = Self::from_rank_file(Rank::One, File::H);
-                let a8 = Self::from_rank_file(Rank::Eight, File::A);
-                let h8 = Self::from_rank_file(Rank::Eight, File::H);
-
-                let travel = |src, dir| {
-                    let src_16x12 = to_16x12(src);
-                    for dest in src.ray_attacks(dir) {
-                        let dest_16x12 = to_16x12(dest);
-                        let entry = DIRECTIONS.get_mut(usize::from(
-                            dest_16x12.wrapping_sub(src_16x12).wrapping_add(119),
-                        ));
-
-                        if let Some(entry) = entry {
-                            *entry = Some(dir);
-                        }
-                    }
-                };
-
-                travel(a1, Direction::North);
-                travel(a1, Direction::NorthEast);
-                travel(a1, Direction::East);
-                travel(a8, Direction::SouthEast);
-                travel(h8, Direction::South);
-                travel(h8, Direction::SouthWest);
-                travel(h8, Direction::West);
-                travel(h1, Direction::NorthWest);
-
-                INIT = true;
-            }
-
-            *DIRECTIONS.get(usize::from(
-                to_16x12(dest)
-                    .wrapping_sub(to_16x12(self))
+            let dest = *TO_16X12.get_unchecked(usize::from(dest.into_inner()));
+            let from = *TO_16X12.get_unchecked(usize::from(self.into_inner()));
+            *DIRECTIONS.get_unchecked(usize::from(
+                dest
+                    .wrapping_sub(from)
                     .wrapping_add(119),
-            ))?
+            ))
         }
     }
 
     /// Return the `Square` in a given `Direction`, if one exists.
+    #[inline]
     pub fn travel(self, direction: Direction) -> Option<Self> {
         /// 16x12 to 8x8 conversion table.
         static FROM_16X12: [Option<u8>; 192] = [

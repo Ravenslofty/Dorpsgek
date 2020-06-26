@@ -256,34 +256,19 @@ impl BoardData {
             & (self.piecemask.bishops() | self.piecemask.rooks() | self.piecemask.queens());
 
         for piece in sliders {
-            let attacker = self.piecelist[piece]
-                .expect("piecemask says there's a piece, but piecelist says there isn't");
-            //println!("{} -> {}", attacker, square);
-            
-            assert!(attacker != square);
-
-            let direction = attacker.direction(square);
-
-            assert!(
-                direction.is_some(),
-                "bitlist array says {} can attack {}, but Square::direction says you can't",
-                attacker,
-                square
-            );
-
-            // We checked this is a Some value above.
-            #[allow(clippy::option_unwrap_used)]
-            let direction = direction.unwrap();
-
-            for dest in square.ray_attacks(direction) {
-                if add {
-                    self.bitlist[dest] |= Bitlist::from(piece);
-                } else {
-                    self.bitlist[dest] &= !Bitlist::from(piece);
-                }
-
-                if self.index[dest].is_some() {
-                    break;
+            if let Some(attacker) = self.piecelist[piece] {
+                if let Some(direction) = attacker.direction(square) {
+                    for dest in square.ray_attacks(direction) {
+                        if add {
+                            self.bitlist[dest] |= Bitlist::from(piece);
+                        } else {
+                            self.bitlist[dest] &= !Bitlist::from(piece);
+                        }
+        
+                        if self.index[dest].is_some() {
+                            break;
+                        }
+                    }
                 }
             }
         }
