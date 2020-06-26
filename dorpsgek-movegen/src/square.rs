@@ -336,21 +336,22 @@ impl Square {
     #[inline]
     pub fn travel(self, direction: Direction) -> Option<Self> {
         /// 16x12 to 8x8 conversion table.
-        static FROM_16X12: [Option<u8>; 192] = [
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-            None, None, None, None, Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), Some(6), Some(7), None, None, None, None,
-            None, None, None, None, Some(8), Some(9), Some(10), Some(11), Some(12), Some(13), Some(14), Some(15), None, None, None, None,
-            None, None, None, None, Some(16), Some(17), Some(18), Some(19), Some(20), Some(21), Some(22), Some(23), None, None, None, None,
-            None, None, None, None, Some(24), Some(25), Some(26), Some(27), Some(28), Some(29), Some(30), Some(31), None, None, None, None,
-            None, None, None, None, Some(32), Some(33), Some(34), Some(35), Some(36), Some(37), Some(38), Some(39), None, None, None, None,
-            None, None, None, None, Some(40), Some(41), Some(42), Some(43), Some(44), Some(45), Some(46), Some(47), None, None, None, None,
-            None, None, None, None, Some(48), Some(49), Some(50), Some(51), Some(52), Some(53), Some(54), Some(55), None, None, None, None,
-            None, None, None, None, Some(56), Some(57), Some(58), Some(59), Some(60), Some(61), Some(62), Some(63), None, None, None, None,
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,   
+        static FROM_16X12: [u8; 192] = [
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 255, 255, 255, 255,
+            255, 255, 255, 255, 8, 9, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255,
+            255, 255, 255, 255, 16, 17, 18, 19, 20, 21, 22, 23, 255, 255, 255, 255,
+            255, 255, 255, 255, 24, 25, 26, 27, 28, 29, 30, 31, 255, 255, 255, 255,
+            255, 255, 255, 255, 32, 33, 34, 35, 36, 37, 38, 39, 255, 255, 255, 255,
+            255, 255, 255, 255, 40, 41, 42, 43, 44, 45, 46, 47, 255, 255, 255, 255,
+            255, 255, 255, 255, 48, 49, 50, 51, 52, 53, 54, 55, 255, 255, 255, 255,
+            255, 255, 255, 255, 56, 57, 58, 59, 60, 61, 62, 63, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,   
         ];
 
+        /// 8x8 to 16x12 conversion table.
         static TO_16X12: [u8; 64] = [
             36, 37, 38, 39, 40, 41, 42, 43,
             52, 53, 54, 55, 56, 57, 58, 59,
@@ -365,8 +366,12 @@ impl Square {
         let square = i16::from(TO_16X12[self.into_inner() as usize]);
         let square = unsafe { *FROM_16X12.get_unchecked(usize::from(square.wrapping_add(direction.to_16x12().into()) as u16)) };
 
+        if square >= 64 {
+            return None;
+        }
+
         unsafe {
-            Some(Self::from_u8_unchecked(square?))
+            Some(Self::from_u8_unchecked(square))
         }
     }
 

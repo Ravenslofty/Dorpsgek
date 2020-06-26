@@ -73,7 +73,6 @@ impl Bitlist {
     }
 
     /// Return the lowest set bit of a `Bitlist` as a `PieceIndex`, if it exists, and clear that bit.
-
     pub fn pop(&mut self) -> Option<PieceIndex> {
         let bit = self.peek()?;
         self.0 &= self.0.wrapping_sub(1);
@@ -84,6 +83,12 @@ impl Bitlist {
 impl From<PieceIndex> for Bitlist {
     fn from(index: PieceIndex) -> Self {
         Self(1_u32 << index.into_inner())
+    }
+}
+
+impl From<u32> for Bitlist {
+    fn from(index: u32) -> Self {
+        Self(index)
     }
 }
 

@@ -187,21 +187,18 @@ impl BoardData {
 
     /// Add or remove attacks for a square.
     fn update_attacks(&mut self, square: Square, bit: PieceIndex, piece: Piece, add: bool) {
-        let update = |bitlist: &mut Bitlist| {
-            if add {
-                *bitlist |= Bitlist::from(bit);
-            } else {
-                *bitlist &= !Bitlist::from(bit);
-            }
+        let update = move |b: &mut Bitlist| {
+            let x = *b | Bitlist::from(bit);
+            let y = *b & !Bitlist::from(bit);
+
+            *b = if add { x } else { y };
         };
 
-        let mut slide = |rays: &[Direction], square: Square| {
-            for dir in rays {
-                for dest in square.ray_attacks(*dir) {
-                    update(&mut self.bitlist[dest]);
-                    if self.index[dest].is_some() {
-                        break;
-                    }
+        let mut slide = |dir: Direction, square: Square| {
+            for dest in square.ray_attacks(dir).take(7) {
+                update(&mut self.bitlist[dest]);
+                if self.index[dest].is_some() {
+                    break;
                 }
             }
         };
@@ -217,35 +214,26 @@ impl BoardData {
                 .king_attacks()
                 .for_each(|dest| update(&mut self.bitlist[dest])),
             Piece::Bishop => {
-                let rays = [
-                    Direction::NorthEast,
-                    Direction::SouthEast,
-                    Direction::SouthWest,
-                    Direction::NorthWest,
-                ];
-                slide(&rays, square);
-            }
+                slide(Direction::NorthEast, square);
+                slide(Direction::SouthEast, square);
+                slide(Direction::SouthWest, square);
+                slide(Direction::NorthWest, square);
+            },
             Piece::Rook => {
-                let rays = [
-                    Direction::North,
-                    Direction::East,
-                    Direction::South,
-                    Direction::West,
-                ];
-                slide(&rays, square);
-            }
+                slide(Direction::North, square);
+                slide(Direction::East, square);
+                slide(Direction::South, square);
+                slide(Direction::West, square);
+            },
             Piece::Queen => {
-                let rays = [
-                    Direction::North,
-                    Direction::NorthEast,
-                    Direction::East,
-                    Direction::SouthEast,
-                    Direction::South,
-                    Direction::SouthWest,
-                    Direction::West,
-                    Direction::NorthWest,
-                ];
-                slide(&rays, square);
+                slide(Direction::NorthEast, square);
+                slide(Direction::SouthEast, square);
+                slide(Direction::SouthWest, square);
+                slide(Direction::NorthWest, square);
+                slide(Direction::North, square);
+                slide(Direction::East, square);
+                slide(Direction::South, square);
+                slide(Direction::West, square);
             }
         };
     }
