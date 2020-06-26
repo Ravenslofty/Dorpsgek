@@ -368,10 +368,19 @@ impl Square {
             None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,   
         ];
 
-        let to_16x12 = |sq: Self| ((16 * u8::from(Rank::from(sq))) + u8::from(File::from(sq)) + 36);
+        static TO_16X12: [u8; 64] = [
+            36, 37, 38, 39, 40, 41, 42, 43,
+            52, 53, 54, 55, 56, 57, 58, 59,
+            68, 69, 70, 71, 72, 73, 74, 75,
+            84, 85, 86, 87, 88, 89, 90, 91,
+            100, 101, 102, 103, 104, 105, 106, 107,
+            116, 117, 118, 119, 120, 121, 122, 123,
+            132, 133, 134, 135, 136, 137, 138, 139,
+            148, 149, 150, 151, 152, 153, 154, 155,
+        ];
 
-        let square = i16::from(to_16x12(self));
-        let square = *FROM_16X12.get(usize::from(square.wrapping_add(direction.to_16x12().into()) as u16))?;
+        let square = i16::from(TO_16X12[self.into_inner() as usize]);
+        let square = unsafe { *FROM_16X12.get_unchecked(usize::from(square.wrapping_add(direction.to_16x12().into()) as u16)) };
 
         unsafe {
             Some(Self::from_u8_unchecked(square?))

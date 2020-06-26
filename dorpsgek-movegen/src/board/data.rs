@@ -275,8 +275,7 @@ impl BoardData {
             #[allow(clippy::option_unwrap_used)]
             let direction = direction.unwrap();
 
-            let mut square = square;
-            while let Some(dest) = square.travel(direction) {
+            for dest in square.ray_attacks(direction) {
                 if add {
                     self.bitlist[dest] |= Bitlist::from(piece);
                 } else {
@@ -286,7 +285,6 @@ impl BoardData {
                 if self.index[dest].is_some() {
                     break;
                 }
-                square = dest;
             }
         }
     }
