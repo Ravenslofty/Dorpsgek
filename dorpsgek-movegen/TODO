@@ -1,0 +1,12 @@
+[x] It's time to ditch `piecemask`/`sidemask`.
+  [x] Colour is implied by bit position.
+    [x] bit <= 15: white
+    [x] bit >= 16: black
+  [x] Piece is implied by a set of bit masks.
+    [x] PBQ
+    [x] NBK
+    [x] RQK
+
+- Sliders can be more lazily updated by taking into account the ray they're moving across.
+- Potentially only copy the attack table, but make/unmake the rest of the board state?
+  - Presently just incrementally-updating the attack table.
