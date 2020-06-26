@@ -457,20 +457,36 @@ impl Square {
 pub enum Direction {
     /// North.
     North,
+    /// North-northeast.
+    NorthNorthEast,
     /// Northeast.
     NorthEast,
+    /// East-northeast.
+    EastNorthEast,
     /// East.
     East,
+    /// East-southeast.
+    EastSouthEast,
     /// Southeast.
     SouthEast,
+    /// South-southeast.
+    SouthSouthEast,
     /// South.
     South,
+    /// South-southwest.
+    SouthSouthWest,
     /// Southwest.
     SouthWest,
+    /// West-southwest.
+    WestSouthWest,
     /// West.
     West,
+    /// West-northwest.
+    WestNorthWest,
     /// Northwest.
     NorthWest,
+    /// North-northwest.
+    NorthNorthWest,
 }
 
 impl Direction {
@@ -485,6 +501,14 @@ impl Direction {
             Self::SouthWest => Self::NorthEast,
             Self::West => Self::East,
             Self::NorthWest => Self::SouthEast,
+            Self::NorthNorthEast => Self::SouthSouthWest,
+            Self::EastNorthEast => Self::WestSouthWest,
+            Self::EastSouthEast => Self::WestNorthWest,
+            Self::SouthSouthEast => Self::NorthNorthWest,
+            Self::SouthSouthWest => Self::NorthNorthEast,
+            Self::WestSouthWest => Self::EastNorthEast,
+            Self::WestNorthWest => Self::EastSouthEast,
+            Self::NorthNorthWest => Self::SouthSouthEast,
         }
     }
 
@@ -492,7 +516,7 @@ impl Direction {
     pub fn diagonal(self) -> bool {
         match self {
             Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest => true,
-            Self::North | Self::East | Self::South | Self::West => false,
+            _ => false,
         }
     }
 
@@ -507,6 +531,14 @@ impl Direction {
             Direction::SouthWest => -17,
             Direction::West => -1,
             Direction::NorthWest => 15,
+            Direction::NorthNorthEast => 33,
+            Direction::EastNorthEast => 18,
+            Direction::EastSouthEast => -14,
+            Direction::SouthSouthEast => -31,
+            Direction::SouthSouthWest => -33,
+            Direction::WestSouthWest => -18,
+            Direction::WestNorthWest => 14,
+            Direction::NorthNorthWest => 31,
         }
     }
 }
@@ -540,21 +572,16 @@ impl Iterator for KnightIter {
     type Item = Square;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let north2 = self.0.north().and_then(Square::north);
-        let east2 = self.0.east().and_then(Square::east);
-        let south2 = self.0.south().and_then(Square::south);
-        let west2 = self.0.west().and_then(Square::west);
-
         loop {
             let next = match self.1 {
-                0 => north2.and_then(Square::east),
-                1 => east2.and_then(Square::north),
-                2 => east2.and_then(Square::south),
-                3 => south2.and_then(Square::east),
-                4 => south2.and_then(Square::west),
-                5 => west2.and_then(Square::south),
-                6 => west2.and_then(Square::north),
-                7 => north2.and_then(Square::west),
+                0 => self.0.travel(Direction::NorthNorthEast),
+                1 => self.0.travel(Direction::EastNorthEast),
+                2 => self.0.travel(Direction::EastSouthEast),
+                3 => self.0.travel(Direction::SouthSouthEast),
+                4 => self.0.travel(Direction::SouthSouthWest),
+                5 => self.0.travel(Direction::WestSouthWest),
+                6 => self.0.travel(Direction::WestNorthWest),
+                7 => self.0.travel(Direction::NorthNorthWest),
                 _ => return None,
             };
 
