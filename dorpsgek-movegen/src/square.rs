@@ -335,44 +335,20 @@ impl Square {
     /// Return the `Square` in a given `Direction`, if one exists.
     #[inline]
     pub fn travel(self, direction: Direction) -> Option<Self> {
-        /// 16x12 to 8x8 conversion table.
-        static FROM_16X12: [u8; 192] = [
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-            255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 255, 255, 255, 255,
-            255, 255, 255, 255, 8, 9, 10, 11, 12, 13, 14, 15, 255, 255, 255, 255,
-            255, 255, 255, 255, 16, 17, 18, 19, 20, 21, 22, 23, 255, 255, 255, 255,
-            255, 255, 255, 255, 24, 25, 26, 27, 28, 29, 30, 31, 255, 255, 255, 255,
-            255, 255, 255, 255, 32, 33, 34, 35, 36, 37, 38, 39, 255, 255, 255, 255,
-            255, 255, 255, 255, 40, 41, 42, 43, 44, 45, 46, 47, 255, 255, 255, 255,
-            255, 255, 255, 255, 48, 49, 50, 51, 52, 53, 54, 55, 255, 255, 255, 255,
-            255, 255, 255, 255, 56, 57, 58, 59, 60, 61, 62, 63, 255, 255, 255, 255,
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,   
-        ];
+        let to_16x8 = |square: Square| {
+            let square = square.into_inner();
+            (square + (square & !7)) as i16
+        };
 
-        /// 8x8 to 16x12 conversion table.
-        static TO_16X12: [u8; 64] = [
-            36, 37, 38, 39, 40, 41, 42, 43,
-            52, 53, 54, 55, 56, 57, 58, 59,
-            68, 69, 70, 71, 72, 73, 74, 75,
-            84, 85, 86, 87, 88, 89, 90, 91,
-            100, 101, 102, 103, 104, 105, 106, 107,
-            116, 117, 118, 119, 120, 121, 122, 123,
-            132, 133, 134, 135, 136, 137, 138, 139,
-            148, 149, 150, 151, 152, 153, 154, 155,
-        ];
+        let square_8x8 = (self.into_inner() as i8 + direction.to_8x8()) as u8;
+        let square_16x8 = to_16x8(self).wrapping_add(direction.to_16x8());
 
-        let square = i16::from(TO_16X12[self.into_inner() as usize]);
-        let square = unsafe { *FROM_16X12.get_unchecked(usize::from(square.wrapping_add(direction.to_16x12().into()) as u16)) };
-
-        if square >= 64 {
-            return None;
+        if (square_16x8 & 0x88) == 0 {
+            unsafe {
+                return Some(Self::from_u8_unchecked(square_8x8));
+            }
         }
-
-        unsafe {
-            Some(Self::from_u8_unchecked(square))
-        }
+        None
     }
 
     pub fn north(self) -> Option<Self> {
@@ -517,8 +493,8 @@ impl Direction {
         }
     }
 
-    /// Returns the 16x12 square difference of this Direction.
-    pub fn to_16x12(self) -> i8 {
+    /// Returns the 16x8 square difference of this Direction.
+    pub fn to_16x8(self) -> i16 {
         match self {
             Direction::North => 16,
             Direction::NorthEast => 17,
@@ -536,6 +512,27 @@ impl Direction {
             Direction::WestSouthWest => -18,
             Direction::WestNorthWest => 14,
             Direction::NorthNorthWest => 31,
+        }
+    }
+
+    pub fn to_8x8(self) -> i8 {
+        match self {
+            Direction::North => 8,
+            Direction::NorthEast => 9,
+            Direction::East => 1,
+            Direction::SouthEast => -7,
+            Direction::South => -8,
+            Direction::SouthWest => -9,
+            Direction::West => -1,
+            Direction::NorthWest => 7,
+            Direction::NorthNorthEast => 17,
+            Direction::EastNorthEast => 10,
+            Direction::EastSouthEast => -6,
+            Direction::SouthSouthEast => -15,
+            Direction::SouthSouthWest => -17,
+            Direction::WestSouthWest => -10,
+            Direction::WestNorthWest => 6,
+            Direction::NorthNorthWest => 15,
         }
     }
 }
