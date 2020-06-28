@@ -48,8 +48,7 @@ use std::mem;
 use tinyvec::ArrayVec;
 
 /// Count the number of legal chess positions after N moves.
-#[inline]
-pub fn perft(mut board: &mut Board, depth: u32) -> u64 {
+pub fn perft(board: &mut Board, depth: u32) -> u64 {
     if depth == 0 {
         1
     } else {
@@ -60,9 +59,9 @@ pub fn perft(mut board: &mut Board, depth: u32) -> u64 {
 
         let mut count = 0;
         for (i, m) in moves.iter().enumerate() {
+            let mut board = board.clone();
             let state = board.make(*m);
             count += perft(&mut board, depth - 1);
-            board.unmake(*m, state);
         }
         count
     }
@@ -102,10 +101,10 @@ fn main() {
         board.generate(&mut moves);*/
 
         for m in moves {
-            let state = board.make(m);
+            let mut board = board.clone();
+            board.make(m);
             let result = perft(&mut board, depth - 1);
             count += result;
-            board.unmake(m, state);
             println!("{}: {}", m, result);
         }
 

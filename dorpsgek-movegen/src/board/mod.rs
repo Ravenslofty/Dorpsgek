@@ -253,15 +253,8 @@ impl Board {
     }
 
     /// Make a move on the board.
-    #[must_use = "can't take back without the move state"]
     #[allow(clippy::missing_inline_in_public_items)]
-    pub fn make(&mut self, m: Move) -> MoveState {
-        let move_state = MoveState {
-            ep: self.ep,
-            piece: self.data.piece_from_square(m.dest),
-            colour: self.data.colour_from_square(m.dest),
-        };
-
+    pub fn make(&mut self, m: Move) {
         match m.kind {
             MoveType::Normal => {
                 self.data.move_piece(m.from, m.dest, true);
@@ -287,31 +280,6 @@ impl Board {
         }
 
         self.side = !self.side;
-        move_state
-    }
-
-    /// Unmake a move on the board.
-    #[allow(clippy::missing_inline_in_public_items)]
-    pub fn unmake(&mut self, m: Move, state: MoveState) {
-        self.side = !self.side;
-        self.ep = state.ep;
-
-        match m.kind {
-            MoveType::Normal | MoveType::DoublePush => {
-                self.data.move_piece(m.dest, m.from, true);
-            }
-            MoveType::Capture => {
-                self.data.move_piece(m.dest, m.from, true);
-                // Captures must capture a piece so these must contain a value; captures of empty squares should be caught in make()
-                #[allow(clippy::option_unwrap_used)]
-                self.data
-                    .add_piece(state.piece.unwrap(), state.colour.unwrap(), m.dest, true);
-            }
-            MoveType::Castle
-            | MoveType::EnPassant
-            | MoveType::Promotion
-            | MoveType::CapturePromotion => todo!(),
-        }
     }
 
     /// Find pinned pieces and handle them specially.

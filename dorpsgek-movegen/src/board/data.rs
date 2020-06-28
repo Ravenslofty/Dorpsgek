@@ -195,7 +195,7 @@ impl BoardData {
         };
 
         let mut slide = |dir: Direction, square: Square| {
-            for dest in square.ray_attacks(dir).take(7) {
+            for dest in square.ray_attacks(dir) {
                 update(&mut self.bitlist[dest]);
                 if self.index[dest].is_some() {
                     break;
