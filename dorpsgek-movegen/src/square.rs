@@ -18,6 +18,7 @@
 use std::{convert::TryFrom, fmt::Display, num::NonZeroU8};
 use crate::colour::Colour;
 
+/// A chessboard rank.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Rank {
     One,
@@ -493,46 +494,54 @@ impl Direction {
         }
     }
 
+    /// Return true if the direction is orthogonal.
+    pub fn orthogonal(self) -> bool {
+        match self {
+            Self::North | Self::East | Self::West | Self::South => true,
+            _ => false,
+        }
+    }
+
     /// Returns the 16x8 square difference of this Direction.
     pub fn to_16x8(self) -> i16 {
         match self {
-            Direction::North => 16,
-            Direction::NorthEast => 17,
-            Direction::East => 1,
-            Direction::SouthEast => -15,
-            Direction::South => -16,
-            Direction::SouthWest => -17,
-            Direction::West => -1,
-            Direction::NorthWest => 15,
-            Direction::NorthNorthEast => 33,
-            Direction::EastNorthEast => 18,
-            Direction::EastSouthEast => -14,
-            Direction::SouthSouthEast => -31,
-            Direction::SouthSouthWest => -33,
-            Direction::WestSouthWest => -18,
-            Direction::WestNorthWest => 14,
-            Direction::NorthNorthWest => 31,
+            Self::North => 16,
+            Self::NorthEast => 17,
+            Self::East => 1,
+            Self::SouthEast => -15,
+            Self::South => -16,
+            Self::SouthWest => -17,
+            Self::West => -1,
+            Self::NorthWest => 15,
+            Self::NorthNorthEast => 33,
+            Self::EastNorthEast => 18,
+            Self::EastSouthEast => -14,
+            Self::SouthSouthEast => -31,
+            Self::SouthSouthWest => -33,
+            Self::WestSouthWest => -18,
+            Self::WestNorthWest => 14,
+            Self::NorthNorthWest => 31,
         }
     }
 
     pub fn to_8x8(self) -> i8 {
         match self {
-            Direction::North => 8,
-            Direction::NorthEast => 9,
-            Direction::East => 1,
-            Direction::SouthEast => -7,
-            Direction::South => -8,
-            Direction::SouthWest => -9,
-            Direction::West => -1,
-            Direction::NorthWest => 7,
-            Direction::NorthNorthEast => 17,
-            Direction::EastNorthEast => 10,
-            Direction::EastSouthEast => -6,
-            Direction::SouthSouthEast => -15,
-            Direction::SouthSouthWest => -17,
-            Direction::WestSouthWest => -10,
-            Direction::WestNorthWest => 6,
-            Direction::NorthNorthWest => 15,
+            Self::North => 8,
+            Self::NorthEast => 9,
+            Self::East => 1,
+            Self::SouthEast => -7,
+            Self::South => -8,
+            Self::SouthWest => -9,
+            Self::West => -1,
+            Self::NorthWest => 7,
+            Self::NorthNorthEast => 17,
+            Self::EastNorthEast => 10,
+            Self::EastSouthEast => -6,
+            Self::SouthSouthEast => -15,
+            Self::SouthSouthWest => -17,
+            Self::WestSouthWest => -10,
+            Self::WestNorthWest => 6,
+            Self::NorthNorthWest => 15,
         }
     }
 }

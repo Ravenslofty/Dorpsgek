@@ -38,12 +38,6 @@ mod index;
 mod piecelist;
 mod piecemask;
 
-pub struct MoveState {
-    pub ep: Option<Square>,
-    pub piece: Option<Piece>,
-    pub colour: Option<Colour>,
-}
-
 /// A chess position.
 #[derive(Clone)]
 pub struct Board {
@@ -137,6 +131,20 @@ impl Board {
             castle: 0,
             ep: None,
             data: BoardData::new(),
+        }
+    }
+
+    /// Check if this board is illegal by seeing if the enemy king is attacked by friendly pieces.
+    /// If it is, it implies the move the enemy made left them in check, which is illegal.
+    #[must_use]
+    #[inline]
+    pub fn illegal(&self) -> bool {
+        if let Some(king_index) = (self.data.kings() & self.data.pieces_of_colour(!self.side)).peek() {
+            let king_square = self.data.square_of_piece(king_index);
+            !self.data.attacks_to(king_square, self.side).empty()
+        } else {
+            // Not having a king is very definitely illegal.
+            false
         }
     }
 
@@ -253,25 +261,27 @@ impl Board {
     }
 
     /// Make a move on the board.
-    #[allow(clippy::missing_inline_in_public_items)]
-    pub fn make(&mut self, m: Move) {
+    #[inline]
+    #[must_use]
+    pub fn make(&self, m: Move) -> Self {
+        let mut b = self.clone();
         match m.kind {
             MoveType::Normal => {
-                self.data.move_piece(m.from, m.dest, true);
-                self.ep = None;
+                b.data.move_piece(m.from, m.dest, true);
+                b.ep = None;
             }
             MoveType::DoublePush => {
-                self.data.move_piece(m.from, m.dest, true);
-                self.ep = m.from.relative_north(self.side);
+                b.data.move_piece(m.from, m.dest, true);
+                b.ep = m.from.relative_north(b.side);
             }
             MoveType::Capture => {
-                let piece_index = self
+                let piece_index = b
                     .data
                     .piece_index(m.dest)
                     .expect("attempted to capture an empty square");
-                self.data.remove_piece(piece_index, true);
-                self.data.move_piece(m.from, m.dest, true);
-                self.ep = None;
+                b.data.remove_piece(piece_index, true);
+                b.data.move_piece(m.from, m.dest, true);
+                b.ep = None;
             }
             MoveType::Castle
             | MoveType::EnPassant
@@ -279,7 +289,8 @@ impl Board {
             | MoveType::CapturePromotion => todo!(),
         }
 
-        self.side = !self.side;
+        b.side = !b.side;
+        b
     }
 
     /// Find pinned pieces and handle them specially.
@@ -425,14 +436,14 @@ impl Board {
 
     /// Generate pawn-specific moves.
     fn generate_pawn(&self, v: &mut ArrayVec<[Move; 256]>, from: Square, dir: Option<Direction>) {
-        fn push(
+        let push = |
             v: &mut ArrayVec<[Move; 256]>,
             from: Square,
             dest: Square,
             kind: MoveType,
             prom: Option<Piece>,
             dir: Option<Direction>,
-        ) {
+        | {
             if let Some(dir) = dir {
                 if let Some(move_dir) = from.direction(dest) {
                     if dir != move_dir && dir != move_dir.opposite() {
@@ -441,7 +452,7 @@ impl Board {
                 }
             }
             v.push(Move::new(from, dest, kind, prom));
-        }
+        };
 
         let add_captures = |dest, v: &mut ArrayVec<[Move; 256]>| {
             if let Some(colour) = self.data.colour_from_square(dest) {
@@ -694,5 +705,13 @@ impl Board {
 
         // King.
         self.generate_king(v);
+    }
+}
+
+impl Drop for Board {
+    fn drop(&mut self) {
+        if ::std::thread::panicking() {
+            println!("{}", self);
+        }
     }
 }

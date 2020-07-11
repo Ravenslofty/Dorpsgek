@@ -30,45 +30,47 @@ impl Piecelist {
         Self([None; 32])
     }
 
+    /// Get the square associated with a piece.
+    ///
+    /// Panics if `piece_index` does not have a square, since `PieceIndex` implies a valid piece.
+    pub fn get(&self, piece_index: PieceIndex) -> Square {
+        let piece_index = usize::from(piece_index.into_inner());
+        self.0[piece_index].expect("valid piece index has invalid square")
+    }
+
     /// Add a piece to the board.
+    ///
+    /// Panics if `piece_index` has a valid square.
     pub fn add_piece(&mut self, piece_index: PieceIndex, square: Square) {
+        let piece_index = usize::from(piece_index.into_inner());
         assert!(
-            self[piece_index].is_none(),
+            self.0[piece_index].is_none(),
             "attempted to add piece to occupied piece index {:?}",
             piece_index
         );
-        self[piece_index] = Some(square);
+        self.0[piece_index] = Some(square);
     }
 
     /// Remove a piece from the board.
+    ///
+    /// Panics if `piece_index` does not have a valid square, or if `square` does not match the internal square.
     pub fn remove_piece(&mut self, piece_index: PieceIndex, square: Square) {
-        match self[piece_index] {
+        let piece_index = usize::from(piece_index.into_inner());
+        match self.0[piece_index] {
             None => panic!("attempted to remove piece from empty square"),
             Some(square_index) => {
                 assert!(
                     square_index == square,
                     "attempted to remove wrong piece from square"
                 );
-                self[piece_index] = None;
+                self.0[piece_index] = None;
             }
         }
     }
 
     /// Move a piece in the piecelist.
     pub fn move_piece(&mut self, piece_index: PieceIndex, square: Square) {
-        self[piece_index] = Some(square);
-    }
-}
-
-impl Index<PieceIndex> for Piecelist {
-    type Output = Option<Square>;
-    fn index(&self, index: PieceIndex) -> &Self::Output {
-        &self.0[usize::from(index.into_inner())]
-    }
-}
-
-impl IndexMut<PieceIndex> for Piecelist {
-    fn index_mut(&mut self, index: PieceIndex) -> &mut Self::Output {
-        &mut self.0[usize::from(index.into_inner())]
+        let piece_index = usize::from(piece_index.into_inner());
+        self.0[piece_index] = Some(square);
     }
 }

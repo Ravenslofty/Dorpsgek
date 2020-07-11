@@ -64,8 +64,7 @@ impl BoardData {
 
     /// Return the square a piece resides on.
     pub fn square_of_piece(&self, bit: PieceIndex) -> Square {
-        #[allow(clippy::option_unwrap_used)]
-        self.piecelist[bit].unwrap()
+        self.piecelist.get(bit)
     }
 
     /// True if the square has a piece on it.
@@ -120,7 +119,7 @@ impl BoardData {
 
     /// Add a `Piece` to a `Square`.
     pub fn add_piece(&mut self, piece: Piece, colour: Colour, square: Square, update: bool) {
-        let piece_index = self.piecemask.add_piece(piece, colour).unwrap();
+        let piece_index = self.piecemask.add_piece(piece, colour);
         self.piecelist.add_piece(piece_index, square);
         self.index.add_piece(piece_index, square);
 
@@ -132,8 +131,7 @@ impl BoardData {
 
     /// Remove a piece from a square.
     pub fn remove_piece(&mut self, piece_index: PieceIndex, update: bool) {
-        let square =
-            self.piecelist[piece_index].expect("attempted to remove piece from empty square");
+        let square = self.piecelist.get(piece_index);
         let piece = self.piece_from_bit(piece_index);
         self.piecemask.remove_piece(piece_index);
         self.piecelist.remove_piece(piece_index, square);
@@ -150,7 +148,6 @@ impl BoardData {
         let piece_index =
             self.index[from_square].expect("attempted to move piece from empty square");
         let piece = self.piece_from_bit(piece_index);
-        let colour = Colour::from(piece_index);
 
         if update {
             self.update_attacks(from_square, piece_index, piece, false);
@@ -167,7 +164,6 @@ impl BoardData {
     }
 
     /// Rebuild the attack set for the board.
-    //
     pub fn rebuild_attacks(&mut self) {
         for square in 0_u8..64 {
             // SAFETY: square is always in bounds.
@@ -226,14 +222,14 @@ impl BoardData {
                 slide(Direction::West, square);
             },
             Piece::Queen => {
-                slide(Direction::NorthEast, square);
-                slide(Direction::SouthEast, square);
-                slide(Direction::SouthWest, square);
-                slide(Direction::NorthWest, square);
                 slide(Direction::North, square);
                 slide(Direction::East, square);
                 slide(Direction::South, square);
                 slide(Direction::West, square);
+                slide(Direction::NorthEast, square);
+                slide(Direction::SouthEast, square);
+                slide(Direction::SouthWest, square);
+                slide(Direction::NorthWest, square);
             }
         };
     }
@@ -244,18 +240,17 @@ impl BoardData {
             & (self.piecemask.bishops() | self.piecemask.rooks() | self.piecemask.queens());
 
         for piece in sliders {
-            if let Some(attacker) = self.piecelist[piece] {
-                if let Some(direction) = attacker.direction(square) {
-                    for dest in square.ray_attacks(direction) {
-                        if add {
-                            self.bitlist[dest] |= Bitlist::from(piece);
-                        } else {
-                            self.bitlist[dest] &= !Bitlist::from(piece);
-                        }
-        
-                        if self.index[dest].is_some() {
-                            break;
-                        }
+            let attacker = self.piecelist.get(piece);
+            if let Some(direction) = attacker.direction(square) {
+                for dest in square.ray_attacks(direction) {
+                    if add {
+                        self.bitlist[dest] |= Bitlist::from(piece);
+                    } else {
+                        self.bitlist[dest] &= !Bitlist::from(piece);
+                    }
+    
+                    if self.index[dest].is_some() {
+                        break;
                     }
                 }
             }

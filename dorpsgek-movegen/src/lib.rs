@@ -48,7 +48,9 @@ use std::mem;
 use tinyvec::ArrayVec;
 
 /// Count the number of legal chess positions after N moves.
-pub fn perft(board: &mut Board, depth: u32) -> u64 {
+#[inline]
+#[must_use]
+pub fn perft(board: &Board, depth: u32) -> u64 {
     if depth == 0 {
         1
     } else {
@@ -58,56 +60,10 @@ pub fn perft(board: &mut Board, depth: u32) -> u64 {
         board.generate(&mut moves);
 
         let mut count = 0;
-        for (i, m) in moves.iter().enumerate() {
-            let mut board = board.clone();
-            let state = board.make(*m);
-            count += perft(&mut board, depth - 1);
+        for m in moves {
+            let board = board.make(m);
+            count += perft(&board, depth - 1);
         }
         count
-    }
-}
-
-/// The start point of the program.
-fn main() {
-    // This is a valid FEN, so it will parse correctly.
-    #[allow(clippy::option_unwrap_used)]
-    let mut board =
-        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-
-    for depth in 1..=5 {
-        let mut count = 0;
-
-        let moves: [Move; 256] = unsafe { mem::zeroed() };
-        let mut moves = ArrayVec::from(moves);
-        moves.set_len(0);
-        board.generate(&mut moves);
-
-        /*let m = moves[12];
-        board.make(m);
-
-        moves.set_len(0);
-        board.generate(&mut moves);
-
-        let m = moves[10];
-        board.make(m);
-
-        moves.set_len(0);
-        board.generate(&mut moves);
-
-        let m = moves[11];
-        board.make(m);
-
-        moves.set_len(0);
-        board.generate(&mut moves);*/
-
-        for m in moves {
-            let mut board = board.clone();
-            board.make(m);
-            let result = perft(&mut board, depth - 1);
-            count += result;
-            println!("{}: {}", m, result);
-        }
-
-        println!("Perft({}): {}", depth, count);
     }
 }

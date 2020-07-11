@@ -114,32 +114,33 @@ impl Piecemask {
         }
     }
 
-    /// Add a piece to a Piecemask
-    pub fn add_piece(&mut self, piece: Piece, colour: Colour) -> Option<PieceIndex> {
-        if let Some(piece_index) = (self.empty() & Bitlist::mask_from_colour(colour)).peek() {
-            let yes = Bitlist::from(piece_index);
-            let no = Bitlist::new();
+    /// Add a piece to a `Piecemask`.
+    ///
+    /// Panics if adding a piece would give `colour` more than 16 pieces.
+    pub fn add_piece(&mut self, piece: Piece, colour: Colour) -> PieceIndex {
+        let piece_index = (self.empty() & Bitlist::mask_from_colour(colour)).peek().expect("no more room to add pieces");
+        let yes = Bitlist::from(piece_index);
+        let no = Bitlist::new();
 
-            let (pbq, nbk, rqk) = match piece {
-                Piece::Pawn => (yes, no, no),
-                Piece::Knight => (no, yes, no),
-                Piece::Bishop => (yes, yes, no),
-                Piece::Rook => (no, no, yes),
-                Piece::Queen => (yes, no, yes),
-                Piece::King => (no, yes, yes),
-            };
+        let (pbq, nbk, rqk) = match piece {
+            Piece::Pawn => (yes, no, no),
+            Piece::Knight => (no, yes, no),
+            Piece::Bishop => (yes, yes, no),
+            Piece::Rook => (no, no, yes),
+            Piece::Queen => (yes, no, yes),
+            Piece::King => (no, yes, yes),
+        };
 
-            self.pbq |= pbq;
-            self.nbk |= nbk;
-            self.rqk |= rqk;
+        self.pbq |= pbq;
+        self.nbk |= nbk;
+        self.rqk |= rqk;
 
-            Some(piece_index)
-        } else {
-            None
-        }
+        piece_index
     }
 
     /// Remove a piece from a Piecemask.
+    ///
+    /// Panics if `piece_index` is not a valid piece.
     pub fn remove_piece(&mut self, piece_index: PieceIndex) {
         assert!(
             self.occupied().contains(piece_index.into()),
