@@ -20,7 +20,7 @@ use crate::{colour::Colour, square::Square};
 use std::{
     convert::TryFrom,
     fmt::Debug,
-    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Index, IndexMut, Not},
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Index, Not},
 };
 
 /// A set of 32 bits, each representing a piece.
@@ -193,18 +193,30 @@ impl Index<Square> for BitlistArray {
     }
 }
 
-impl IndexMut<Square> for BitlistArray {
-    fn index_mut(&mut self, index: Square) -> &mut Self::Output {
-        // The valid range of a `Square` is 0-63, matching the internal array, so this never panics.
-        #[allow(clippy::indexing_slicing)]
-        let result = &mut self.0[usize::from(index.into_inner())];
-        result
-    }
-}
-
 impl BitlistArray {
     /// Create a `BitlistArray`.
     pub const fn new() -> Self {
         Self([Bitlist::new(); 64])
+    }
+
+    /// Remove all attacks to a square.
+    pub fn clear(&mut self, index: Square) {
+        self.0[usize::from(index.into_inner())] = Bitlist::new();
+    }
+
+    /// Add an attack to a square.
+    pub fn add_piece(&mut self, index: Square, piece: PieceIndex) {
+        let index = usize::from(index.into_inner());
+        let piece = Bitlist::from(piece);
+        assert!(!self.0[index].contains(piece));
+        self.0[index] |= piece;
+    }
+
+    /// Remove an attack from a square.
+    pub fn remove_piece(&mut self, index: Square, piece: PieceIndex) {
+        let index = usize::from(index.into_inner());
+        let piece = Bitlist::from(piece);
+        assert!(self.0[index].contains(piece));
+        self.0[index] &= !piece;
     }
 }

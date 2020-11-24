@@ -166,9 +166,9 @@ impl BoardData {
     /// Rebuild the attack set for the board.
     pub fn rebuild_attacks(&mut self) {
         for square in 0_u8..64 {
-            // SAFETY: square is always in bounds.
-            let square = unsafe { Square::from_u8_unchecked(square) };
-            self.bitlist[square] = Bitlist::new();
+            // SAFETY: index is always in bounds.
+            let index = unsafe { Square::from_u8_unchecked(square) };
+            self.bitlist.clear(index);
         }
 
         for square in 0_u8..64 {
@@ -183,16 +183,17 @@ impl BoardData {
 
     /// Add or remove attacks for a square.
     fn update_attacks(&mut self, square: Square, bit: PieceIndex, piece: Piece, add: bool) {
-        let update = move |b: &mut Bitlist| {
-            let x = *b | Bitlist::from(bit);
-            let y = *b & !Bitlist::from(bit);
-
-            *b = if add { x } else { y };
+        let update = |b: &mut BitlistArray, dest: Square| {
+            if add {
+                b.add_piece(dest, bit);
+            } else {
+                b.remove_piece(dest, bit);
+            }
         };
 
         let mut slide = |dir: Direction, square: Square| {
             for dest in square.ray_attacks(dir) {
-                update(&mut self.bitlist[dest]);
+                update(&mut self.bitlist, dest);
                 if self.index[dest].is_some() {
                     break;
                 }
@@ -202,13 +203,13 @@ impl BoardData {
         match piece {
             Piece::Pawn => square
                 .pawn_attacks(Colour::from(bit))
-                .for_each(|dest| update(&mut self.bitlist[dest])),
+                .for_each(|dest| update(&mut self.bitlist, dest)),
             Piece::Knight => square
                 .knight_attacks()
-                .for_each(|dest| update(&mut self.bitlist[dest])),
+                .for_each(|dest| update(&mut self.bitlist, dest)),
             Piece::King => square
                 .king_attacks()
-                .for_each(|dest| update(&mut self.bitlist[dest])),
+                .for_each(|dest| update(&mut self.bitlist, dest)),
             Piece::Bishop => {
                 slide(Direction::NorthEast, square);
                 slide(Direction::SouthEast, square);
@@ -244,9 +245,9 @@ impl BoardData {
             if let Some(direction) = attacker.direction(square) {
                 for dest in square.ray_attacks(direction) {
                     if add {
-                        self.bitlist[dest] |= Bitlist::from(piece);
+                        self.bitlist.add_piece(dest, piece);
                     } else {
-                        self.bitlist[dest] &= !Bitlist::from(piece);
+                        self.bitlist.remove_piece(dest, piece);
                     }
     
                     if self.index[dest].is_some() {
