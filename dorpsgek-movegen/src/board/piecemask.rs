@@ -34,53 +34,53 @@ impl Piecemask {
         }
     }
 
-    pub fn empty(&self) -> Bitlist {
-        !(self.pbq | self.nbk | self.rqk)
+    pub const fn empty(&self) -> Bitlist {
+        self.pbq.or(self.nbk).or(self.rqk).invert()
     }
 
-    pub fn occupied(&self) -> Bitlist {
-        !self.empty()
+    pub const fn occupied(&self) -> Bitlist {
+        self.empty().invert()
     }
 
-    pub fn pawns(&self) -> Bitlist {
-        self.pbq & !self.nbk & !self.rqk
+    pub const fn pawns(&self) -> Bitlist {
+        self.pbq.and(self.nbk.invert()).and(self.rqk.invert())
     }
 
-    pub fn bishops(&self) -> Bitlist {
-        self.pbq & self.nbk & !self.rqk
+    pub const fn bishops(&self) -> Bitlist {
+        self.pbq.and(self.nbk).and(self.rqk.invert())
     }
 
-    pub fn rooks(&self) -> Bitlist {
-        !self.pbq & !self.nbk & self.rqk
+    pub const fn rooks(&self) -> Bitlist {
+        self.pbq.invert().and(self.nbk.invert()).and(self.rqk)
     }
 
-    pub fn queens(&self) -> Bitlist {
-        self.pbq & !self.nbk & self.rqk
+    pub const fn queens(&self) -> Bitlist {
+        self.pbq.and(self.nbk.invert()).and(self.rqk)
     }
 
-    pub fn kings(&self) -> Bitlist {
-        !self.pbq & self.nbk & self.rqk
+    pub const fn kings(&self) -> Bitlist {
+        self.pbq.invert().and(self.nbk).and(self.rqk)
     }
 
-    pub fn white(&self) -> Bitlist {
-        self.occupied() & Bitlist::white()
+    pub const fn white(&self) -> Bitlist {
+        self.occupied().and(Bitlist::white())
     }
 
-    pub fn black(&self) -> Bitlist {
-        self.occupied() & Bitlist::black()
+    pub const fn black(&self) -> Bitlist {
+        self.occupied().and(Bitlist::black())
     }
 
-    pub fn pieces_of_colour(&self, colour: Colour) -> Bitlist {
+    pub const fn pieces_of_colour(&self, colour: Colour) -> Bitlist {
         match colour {
             Colour::White => self.white(),
             Colour::Black => self.black(),
         }
     }
 
-    pub fn piece(&self, index: PieceIndex) -> Option<Piece> {
-        let pbq = self.pbq.contains(index.into());
-        let nbk = self.nbk.contains(index.into());
-        let rqk = self.rqk.contains(index.into());
+    pub const fn piece(&self, index: PieceIndex) -> Option<Piece> {
+        let pbq = self.pbq.contains(Bitlist::from_piece(index));
+        let nbk = self.nbk.contains(Bitlist::from_piece(index));
+        let rqk = self.rqk.contains(Bitlist::from_piece(index));
         match (pbq, nbk, rqk) {
             (true, false, false) => Some(Piece::Pawn),
             (false, true, false) => Some(Piece::Knight),

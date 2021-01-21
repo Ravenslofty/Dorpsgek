@@ -78,6 +78,26 @@ impl Bitlist {
         self.0 &= self.0.wrapping_sub(1);
         Some(bit)
     }
+
+    // TODO: remove when traits can have const impls.
+    pub const fn from_piece(index: PieceIndex) -> Self {
+        Self(1_u32 << index.into_inner())
+    }
+
+    // TODO: remove when traits can have const impls.
+    pub const fn and(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
+
+    // TODO: remove when traits can have const impls.
+    pub const fn or(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+
+    // TODO: remove when traits can have const impls.
+    pub const fn invert(self) -> Self {
+        Self(!self.0)
+    }
 }
 
 impl From<PieceIndex> for Bitlist {

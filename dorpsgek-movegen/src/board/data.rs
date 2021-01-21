@@ -74,32 +74,32 @@ impl BoardData {
     }
 
     /// Return a bitlist of all pawns.
-    pub fn pawns(&self) -> Bitlist {
+    pub const fn pawns(&self) -> Bitlist {
         self.piecemask.pawns()
     }
 
     /// Return a bitlist of all bishops.
-    pub fn bishops(&self) -> Bitlist {
+    pub const fn bishops(&self) -> Bitlist {
         self.piecemask.bishops()
     }
 
     /// Return a bitlist of all rooks.
-    pub fn rooks(&self) -> Bitlist {
+    pub const fn rooks(&self) -> Bitlist {
         self.piecemask.rooks()
     }
 
     /// Return a bitlist of all queens.
-    pub fn queens(&self) -> Bitlist {
+    pub const fn queens(&self) -> Bitlist {
         self.piecemask.queens()
     }
 
     /// Return a bitlist of all kings.
-    pub fn kings(&self) -> Bitlist {
+    pub const fn kings(&self) -> Bitlist {
         self.piecemask.kings()
     }
 
     /// Return a bitlist of all pieces of a given colour.
-    pub fn pieces_of_colour(&self, colour: Colour) -> Bitlist {
+    pub const fn pieces_of_colour(&self, colour: Colour) -> Bitlist {
         self.piecemask.pieces_of_colour(colour)
     }
 
