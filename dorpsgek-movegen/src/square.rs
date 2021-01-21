@@ -307,12 +307,11 @@ impl Square {
     /// Return the `Direction` between two squares, if any exists.
     #[must_use]
     pub fn direction(self, dest: Self) -> Option<Direction> {
-        /// Lazily-initialised direction table using 16x12 coordinates.
-        static DIRECTIONS: [Option<Direction>; 240] = [
+        const DIRECTIONS: [Option<Direction>; 240] = [
             Some(Direction::SouthWest), None, None, None, None, None, None, Some(Direction::South), None, None, None, None, None, None, Some(Direction::SouthEast), None, None, Some(Direction::SouthWest), None, None, None, None, None, Some(Direction::South), None, None, None, None, None, Some(Direction::SouthEast), None, None, None, None, Some(Direction::SouthWest), None, None, None, None, Some(Direction::South), None, None, None, None, Some(Direction::SouthEast), None, None, None, None, None, None, Some(Direction::SouthWest), None, None, None, Some(Direction::South), None, None, None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, Some(Direction::SouthWest), None, None, Some(Direction::South), None, None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, None, None, Some(Direction::SouthWest), None, Some(Direction::South), None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, None, None, None, None, Some(Direction::SouthWest), Some(Direction::South), Some(Direction::SouthEast), None, None, None, None, None, None, None, Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), None, Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), None, None, None, None, None, None, None, Some(Direction::NorthWest), Some(Direction::North), Some(Direction::NorthEast), None, None, None, None, None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, Some(Direction::North), None, Some(Direction::NorthEast), None, None, None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, None, Some(Direction::North), None, None, Some(Direction::NorthEast), None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, None, None, Some(Direction::North), None, None, None, Some(Direction::NorthEast), None, None, None, None, None, None, Some(Direction::NorthWest), None, None, None, None, Some(Direction::North), None, None, None, None, Some(Direction::NorthEast), None, None, None, None, Some(Direction::NorthWest), None, None, None, None, None, Some(Direction::North), None, None, None, None, None, Some(Direction::NorthEast), None, None, Some(Direction::NorthWest), None, None, None, None, None, None, Some(Direction::North), None, None, None, None, None, None, Some(Direction::NorthEast), None,
         ];
 
-        static TO_16X12: [u8; 64] = [
+        const TO_16X12: [u8; 64] = [
             36, 37, 38, 39, 40, 41, 42, 43,
             52, 53, 54, 55, 56, 57, 58, 59,
             68, 69, 70, 71, 72, 73, 74, 75,
@@ -338,12 +337,13 @@ impl Square {
 
     /// Return the `Square` in a given `Direction`, if one exists.
     #[must_use]
-    pub fn travel(self, direction: Direction) -> Option<Self> {
-        let to_16x8 = |square: Self| {
+    pub const fn travel(self, direction: Direction) -> Option<Self> {
+        const fn to_16x8(square: Square) -> i16 {
             let square = square.into_inner();
-            i16::from(square + (square & !7))
-        };
+            (square + (square & !7)) as i16
+        }
 
+        #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
         let square_8x8 = (self.into_inner() as i8 + direction.to_8x8()) as u8;
         let square_16x8 = to_16x8(self).wrapping_add(direction.to_16x8());
 
@@ -356,48 +356,48 @@ impl Square {
     }
 
     #[must_use]
-    pub fn north(self) -> Option<Self> {
+    pub const fn north(self) -> Option<Self> {
         self.travel(Direction::North)
     }
 
     #[must_use]
-    pub fn north_east(self) -> Option<Self> {
+    pub const fn north_east(self) -> Option<Self> {
         self.travel(Direction::NorthEast)
     }
 
     #[must_use]
-    pub fn east(self) -> Option<Self> {
+    pub const fn east(self) -> Option<Self> {
         self.travel(Direction::East)
     }
 
     #[must_use]
-    pub fn south_east(self) -> Option<Self> {
+    pub const fn south_east(self) -> Option<Self> {
         self.travel(Direction::SouthEast)
     }
 
     #[must_use]
-    pub fn south(self) -> Option<Self> {
+    pub const fn south(self) -> Option<Self> {
         self.travel(Direction::South)
     }
 
     #[must_use]
-    pub fn south_west(self) -> Option<Self> {
+    pub const fn south_west(self) -> Option<Self> {
         self.travel(Direction::SouthWest)
     }
 
     #[must_use]
-    pub fn west(self) -> Option<Self> {
+    pub const fn west(self) -> Option<Self> {
         self.travel(Direction::West)
     }
 
     #[must_use]
-    pub fn north_west(self) -> Option<Self> {
+    pub const fn north_west(self) -> Option<Self> {
         self.travel(Direction::NorthWest)
     }
 
     /// The colour-dependent north of a square.
     #[must_use]
-    pub fn relative_north(self, colour: Colour) -> Option<Self> {
+    pub const fn relative_north(self, colour: Colour) -> Option<Self> {
         match colour {
             Colour::White => self.north(),
             Colour::Black => self.south(),
@@ -406,7 +406,7 @@ impl Square {
 
     /// The colour-dependent south of a square.
     #[must_use]
-    pub fn relative_south(self, colour: Colour) -> Option<Self> {
+    pub const fn relative_south(self, colour: Colour) -> Option<Self> {
         match colour {
             Colour::White => self.south(),
             Colour::Black => self.north(),
@@ -415,7 +415,7 @@ impl Square {
 
     /// An iterator over the squares a pawn attacks.
     #[must_use]
-    pub fn pawn_attacks(self, colour: Colour) -> PawnIter {
+    pub const fn pawn_attacks(self, colour: Colour) -> PawnIter {
         let relative_north = match colour {
             Colour::White => self.north(),
             Colour::Black => self.south(),

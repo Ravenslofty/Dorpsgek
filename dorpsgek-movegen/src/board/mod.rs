@@ -210,13 +210,11 @@ impl Board {
         }
         idx += 1;
         c = fen[idx];
-        if c == b'w' {
-            b.side = Colour::White;
-        } else if c == b'b' {
-            b.side = Colour::Black;
-        } else {
-            return None;
-        }
+        b.side = match c {
+            b'w' => Colour::White,
+            b'b' => Colour::Black,
+            _ => return None,
+        };
         idx += 2;
         c = fen[idx];
         b.castle = 0;

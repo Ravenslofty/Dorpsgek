@@ -138,6 +138,7 @@ impl IntoIterator for Bitlist {
 }
 
 /// Iterate over a `Bitlist`.
+#[allow(clippy::module_name_repetitions)]
 #[repr(transparent)]
 pub struct BitlistIter(Bitlist);
 
@@ -150,6 +151,7 @@ impl Iterator for BitlistIter {
 }
 
 /// The main attack table array.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct BitlistArray([Bitlist; 64]);

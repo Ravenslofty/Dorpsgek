@@ -22,6 +22,7 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[repr(transparent)]
 pub struct PieceIndex(NonZeroU8);

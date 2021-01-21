@@ -82,7 +82,7 @@ pub fn perft_bench(c: &mut Criterion<PosixTime>) {
 
 pub fn bench(c: &mut Criterion<PosixTime>) {
     makemove_bench(c);
-    // perft_bench(c);
+    perft_bench(c);
 }
 
 criterion_group! {

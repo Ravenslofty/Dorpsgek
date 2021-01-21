@@ -27,6 +27,7 @@ use crate::{
     square::{Direction, Square},
 };
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct BoardData {
     bitlist: BitlistArray,
