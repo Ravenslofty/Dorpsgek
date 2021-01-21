@@ -50,7 +50,7 @@ impl Bitlist {
     }
 
     /// Create a mask corresponding to the bits of a given colour.
-    pub fn mask_from_colour(colour: Colour) -> Self {
+    pub const fn mask_from_colour(colour: Colour) -> Self {
         match colour {
             Colour::White => Self::white(),
             Colour::Black => Self::black(),
@@ -171,7 +171,7 @@ impl Debug for BitlistArray {
 impl PartialEq for BitlistArray {
     fn eq(&self, other: &Self) -> bool {
         for square in 0_u8..64 {
-            #[allow(clippy::result_unwrap_used)]
+            #[allow(clippy::unwrap_used)]
             let square = Square::try_from(square).unwrap();
 
             if self[square] != other[square] {
@@ -205,18 +205,18 @@ impl BitlistArray {
     }
 
     /// Add an attack to a square.
-    pub fn add_piece(&mut self, index: Square, piece: PieceIndex) {
-        let index = usize::from(index.into_inner());
+    pub fn add_piece(&mut self, square: Square, piece: PieceIndex) {
+        let index = usize::from(square.into_inner());
         let piece = Bitlist::from(piece);
-        assert!(!self.0[index].contains(piece));
+        assert!(!self.0[index].contains(piece), "attempted to add pre-existing piece attack on {}", square);
         self.0[index] |= piece;
     }
 
     /// Remove an attack from a square.
-    pub fn remove_piece(&mut self, index: Square, piece: PieceIndex) {
-        let index = usize::from(index.into_inner());
+    pub fn remove_piece(&mut self, square: Square, piece: PieceIndex) {
+        let index = usize::from(square.into_inner());
         let piece = Bitlist::from(piece);
-        assert!(self.0[index].contains(piece));
+        assert!(self.0[index].contains(piece), "attempted to remove nonexistent piece attack on {}", square);
         self.0[index] &= !piece;
     }
 }

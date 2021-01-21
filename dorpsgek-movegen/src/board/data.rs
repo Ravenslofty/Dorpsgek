@@ -124,7 +124,7 @@ impl BoardData {
         self.index.add_piece(piece_index, square);
 
         if update {
-            self.update_attacks(square, piece_index, piece, true);
+            self.update_attacks(square, piece_index, piece, true, None);
             self.update_sliders(square, false);
         }
     }
@@ -138,28 +138,35 @@ impl BoardData {
         self.index.remove_piece(piece_index, square);
 
         if update {
-            self.update_attacks(square, piece_index, piece, false);
+            self.update_attacks(square, piece_index, piece, false, None);
             self.update_sliders(square, true);
         }
     }
 
     /// Move a piece from a square to another square.
-    pub fn move_piece(&mut self, from_square: Square, to_square: Square, update: bool) {
+    pub fn move_piece(&mut self, from_square: Square, to_square: Square, update: bool, quiet: bool) {
         let piece_index =
             self.index[from_square].expect("attempted to move piece from empty square");
         let piece = self.piece_from_bit(piece_index);
+        let slide_dir = from_square.direction(to_square).and_then(|dir| if matches!(piece, Piece::Bishop | Piece::Rook | Piece::Queen) && quiet { Some(dir) } else { None } );
 
         if update {
-            self.update_attacks(from_square, piece_index, piece, false);
+            self.update_attacks(from_square, piece_index, piece, false, slide_dir);
             self.update_sliders(from_square, true);
+            if slide_dir.is_some() && quiet {
+                self.bitlist.add_piece(from_square, piece_index);
+            }
         }
 
         self.piecelist.move_piece(piece_index, to_square);
         self.index.move_piece(piece_index, from_square, to_square);
 
         if update {
-            self.update_attacks(to_square, piece_index, piece, true);
+            self.update_attacks(to_square, piece_index, piece, true, slide_dir);
             self.update_sliders(to_square, false);
+            if slide_dir.is_some() && quiet {
+                self.bitlist.remove_piece(to_square, piece_index);
+            }
         }
     }
 
@@ -176,13 +183,13 @@ impl BoardData {
             let square = unsafe { Square::from_u8_unchecked(square) };
             if let Some(bit) = self.index[square] {
                 let piece = self.piece_from_bit(bit);
-                self.update_attacks(square, bit, piece, true);
+                self.update_attacks(square, bit, piece, true, None);
             }
         }
     }
 
     /// Add or remove attacks for a square.
-    fn update_attacks(&mut self, square: Square, bit: PieceIndex, piece: Piece, add: bool) {
+    fn update_attacks(&mut self, square: Square, bit: PieceIndex, piece: Piece, add: bool, skip_dir: Option<Direction>) {
         let update = |b: &mut BitlistArray, dest: Square| {
             if add {
                 b.add_piece(dest, bit);
@@ -192,6 +199,12 @@ impl BoardData {
         };
 
         let mut slide = |dir: Direction, square: Square| {
+            if let Some(slide_dir) = skip_dir {
+                if slide_dir == dir || slide_dir == dir.opposite() {
+                    return;
+                }
+            }
+
             for dest in square.ray_attacks(dir) {
                 update(&mut self.bitlist, dest);
                 if self.index[dest].is_some() {

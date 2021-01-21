@@ -41,7 +41,7 @@ impl Display for Move {
             from_file as char, from_rank as char, dest_file as char, dest_rank as char
         )?;
 
-        if let Some(piece) = self.prom {
+        if self.prom.is_some() {
             static PROMOTE_CHAR: [char; 6] = ['p', 'n', 'b', 'r', 'q', 'k'];
             write!(f, "{}", PROMOTE_CHAR[self.kind as usize])?;
         }
@@ -52,13 +52,14 @@ impl Display for Move {
 
 impl Move {
     /// Create a new Move.
-    pub const fn new(from: Square, dest: Square, kind: MoveType, prom: Option<Piece>) -> Self {
+    #[must_use]
+    pub const fn new(from: Square, dest: Square, kind: MoveType, promotion_piece: Option<Piece>) -> Self {
         //assert!(dest != from);
         Self {
             from,
             dest,
             kind,
-            prom,
+            prom: promotion_piece,
         }
     }
 }

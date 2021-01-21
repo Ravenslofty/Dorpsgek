@@ -84,9 +84,9 @@ impl Display for Board {
                     Colour::Black => c.to_ascii_lowercase(),
                 };
 
-                write!(f, "{}", c)?;
+                write!(f, "{} ", c)?;
             } else {
-                write!(f, ".")?;
+                write!(f, ". ")?;
             }
 
             if j & 7 == 7 {
@@ -139,13 +139,13 @@ impl Board {
     #[must_use]
     #[inline]
     pub fn illegal(&self) -> bool {
+        #[allow(clippy::option_if_let_else)]
         if let Some(king_index) = (self.data.kings() & self.data.pieces_of_colour(!self.side)).peek() {
             let king_square = self.data.square_of_piece(king_index);
-            !self.data.attacks_to(king_square, self.side).empty()
-        } else {
-            // Not having a king is very definitely illegal.
-            false
+            return !self.data.attacks_to(king_square, self.side).empty();
         }
+        // Not having a king is very definitely illegal.
+        false
     }
 
     /// Parse a position in Forsyth-Edwards Notation into a board.
@@ -169,7 +169,7 @@ impl Board {
         for rank in (0..=7).rev() {
             let mut file = 0;
             while file <= 7 {
-                if c >= b'1' && c <= b'8' {
+                if (b'1'..=b'8').contains(&c) {
                     let length = c - b'0';
                     let mut i = 0;
                     while i < length {
@@ -267,11 +267,11 @@ impl Board {
         let mut b = self.clone();
         match m.kind {
             MoveType::Normal => {
-                b.data.move_piece(m.from, m.dest, true);
+                b.data.move_piece(m.from, m.dest, true, true);
                 b.ep = None;
             }
             MoveType::DoublePush => {
-                b.data.move_piece(m.from, m.dest, true);
+                b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = m.from.relative_north(b.side);
             }
             MoveType::Capture => {
@@ -280,7 +280,7 @@ impl Board {
                     .piece_index(m.dest)
                     .expect("attempted to capture an empty square");
                 b.data.remove_piece(piece_index, true);
-                b.data.move_piece(m.from, m.dest, true);
+                b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = None;
             }
             MoveType::Castle
@@ -564,9 +564,8 @@ impl Board {
                     if colour == self.side {
                         // Forbid own-colour captures.
                         continue;
-                    } else {
-                        kind = MoveType::Capture;
                     }
+                    kind = MoveType::Capture;
                 }
 
                 // It's illegal for kings to move to attacked squares; prune those out.
@@ -581,7 +580,7 @@ impl Board {
 
     /// Generate moves when in check by a single piece.
     fn generate_single_check(&self, v: &mut ArrayVec<[Move; 256]>) {
-        #[allow(clippy::option_unwrap_used)]
+        #[allow(clippy::unwrap_used)]
         let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
             .peek()
             .unwrap();
@@ -649,7 +648,8 @@ impl Board {
         }
     }
 
-    fn generate_double_check(&self, v: &mut ArrayVec<[Move; 256]>) {
+    #[allow(clippy::unused_self)]
+    fn generate_double_check(&self, _v: &mut ArrayVec<[Move; 256]>) {
         todo!("double check move generation");
     }
 
@@ -684,9 +684,8 @@ impl Board {
                 if colour == self.side {
                     // Forbid own-colour captures.
                     continue;
-                } else {
-                    kind = MoveType::Capture;
                 }
+                kind = MoveType::Capture;
             }
 
             // For every piece that attacks this square, find its location and add it to the move list.

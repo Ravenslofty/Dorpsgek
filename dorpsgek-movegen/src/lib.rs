@@ -16,15 +16,14 @@
  */
 
 //#![forbid(unsafe_code)]
-#![forbid(missing_docs)]
+//#![forbid(missing_docs)]
 #![warn(warnings, rust_2018_idioms)]
-#![warn(clippy::all, clippy::pedantic, clippy::restriction, clippy::nursery, clippy::perf)]
+#![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::perf)]
 #![allow(
     clippy::integer_arithmetic,
     clippy::float_arithmetic,
     clippy::integer_division,
-    clippy::option_expect_used,
-    clippy::result_expect_used,
+    clippy::expect_used,
     clippy::shadow_reuse,
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
@@ -43,7 +42,8 @@ mod piece;
 mod square;
 
 pub use board::Board;
-use chessmove::Move;
+pub use chessmove::{Move, MoveType};
+pub use square::Square;
 use std::mem;
 use tinyvec::ArrayVec;
 

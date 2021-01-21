@@ -17,7 +17,6 @@
 
 use super::index::PieceIndex;
 use crate::square::Square;
-use std::ops::{Index, IndexMut};
 
 /// A mapping from `PieceIndex` to `Square`.
 #[derive(Clone)]

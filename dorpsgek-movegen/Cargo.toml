@@ -15,5 +15,5 @@ criterion = "0.3"
 criterion-cpu-time = "0.1.0"
 
 [[bench]]
-name = "perft"
+name = "makemove"
 harness = false

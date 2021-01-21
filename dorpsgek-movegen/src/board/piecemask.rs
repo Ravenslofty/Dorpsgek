@@ -46,10 +46,6 @@ impl Piecemask {
         self.pbq & !self.nbk & !self.rqk
     }
 
-    pub fn knights(&self) -> Bitlist {
-        !self.pbq & self.nbk & !self.rqk
-    }
-
     pub fn bishops(&self) -> Bitlist {
         self.pbq & self.nbk & !self.rqk
     }
@@ -76,24 +72,6 @@ impl Piecemask {
 
     pub fn pieces_of_colour(&self, colour: Colour) -> Bitlist {
         match colour {
-            Colour::White => self.white(),
-            Colour::Black => self.black(),
-        }
-    }
-
-    pub fn piece_mask(&self, index: Piece) -> Bitlist {
-        match index {
-            Piece::Pawn => self.pawns(),
-            Piece::Knight => self.knights(),
-            Piece::Bishop => self.bishops(),
-            Piece::Rook => self.rooks(),
-            Piece::Queen => self.queens(),
-            Piece::King => self.kings(),
-        }
-    }
-
-    pub fn colour_mask(&self, index: Colour) -> Bitlist {
-        match index {
             Colour::White => self.white(),
             Colour::Black => self.black(),
         }

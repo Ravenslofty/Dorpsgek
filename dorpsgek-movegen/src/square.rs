@@ -81,7 +81,7 @@ impl TryFrom<u8> for Rank {
 }
 
 impl Rank {
-    pub fn north(self) -> Option<Self> {
+    pub const fn north(self) -> Option<Self> {
         match self {
             Self::One => Some(Self::Two),
             Self::Two => Some(Self::Three),
@@ -94,7 +94,7 @@ impl Rank {
         }
     }
 
-    pub fn south(self) -> Option<Self> {
+    pub const fn south(self) -> Option<Self> {
         match self {
             Self::One => None,
             Self::Two => Some(Self::One),
@@ -184,7 +184,7 @@ impl TryFrom<u8> for File {
 }
 
 impl File {
-    pub fn east(self) -> Option<Self> {
+    pub const fn east(self) -> Option<Self> {
         match self {
             Self::A => Some(Self::B),
             Self::B => Some(Self::C),
@@ -197,7 +197,7 @@ impl File {
         }
     }
 
-    pub fn west(self) -> Option<Self> {
+    pub const fn west(self) -> Option<Self> {
         match self {
             Self::A => None,
             Self::B => Some(Self::A),
@@ -278,6 +278,7 @@ impl TryFrom<u8> for Square {
 
 impl Square {
     /// Construct a `Square` from a `Rank` and `File`.
+    #[must_use]
     pub fn from_rank_file(rank: Rank, file: File) -> Self {
         let rank = u8::from(rank);
         let file = u8::from(file);
@@ -291,18 +292,20 @@ impl Square {
     /// # Safety
     ///
     /// `sq` must be in the range 0-63.
+    #[must_use]
     pub const unsafe fn from_u8_unchecked(sq: u8) -> Self {
         Self(NonZeroU8::new_unchecked(sq + 1))
     }
 
     /// Return the internal `u8`.
+    #[must_use]
     pub const fn into_inner(self) -> u8 {
         // The "& 63" is to hint to the compiler that this will never be greater than it.
         (self.0.get() - 1) & 63
     }
 
     /// Return the `Direction` between two squares, if any exists.
-    #[inline]
+    #[must_use]
     pub fn direction(self, dest: Self) -> Option<Direction> {
         /// Lazily-initialised direction table using 16x12 coordinates.
         static DIRECTIONS: [Option<Direction>; 240] = [
@@ -334,11 +337,11 @@ impl Square {
     }
 
     /// Return the `Square` in a given `Direction`, if one exists.
-    #[inline]
+    #[must_use]
     pub fn travel(self, direction: Direction) -> Option<Self> {
-        let to_16x8 = |square: Square| {
+        let to_16x8 = |square: Self| {
             let square = square.into_inner();
-            (square + (square & !7)) as i16
+            i16::from(square + (square & !7))
         };
 
         let square_8x8 = (self.into_inner() as i8 + direction.to_8x8()) as u8;
@@ -352,39 +355,48 @@ impl Square {
         None
     }
 
+    #[must_use]
     pub fn north(self) -> Option<Self> {
         self.travel(Direction::North)
     }
 
+    #[must_use]
     pub fn north_east(self) -> Option<Self> {
         self.travel(Direction::NorthEast)
     }
 
+    #[must_use]
     pub fn east(self) -> Option<Self> {
         self.travel(Direction::East)
     }
 
+    #[must_use]
     pub fn south_east(self) -> Option<Self> {
         self.travel(Direction::SouthEast)
     }
 
+    #[must_use]
     pub fn south(self) -> Option<Self> {
         self.travel(Direction::South)
     }
 
+    #[must_use]
     pub fn south_west(self) -> Option<Self> {
         self.travel(Direction::SouthWest)
     }
 
+    #[must_use]
     pub fn west(self) -> Option<Self> {
         self.travel(Direction::West)
     }
 
+    #[must_use]
     pub fn north_west(self) -> Option<Self> {
         self.travel(Direction::NorthWest)
     }
 
     /// The colour-dependent north of a square.
+    #[must_use]
     pub fn relative_north(self, colour: Colour) -> Option<Self> {
         match colour {
             Colour::White => self.north(),
@@ -393,6 +405,7 @@ impl Square {
     }
 
     /// The colour-dependent south of a square.
+    #[must_use]
     pub fn relative_south(self, colour: Colour) -> Option<Self> {
         match colour {
             Colour::White => self.south(),
@@ -401,6 +414,7 @@ impl Square {
     }
 
     /// An iterator over the squares a pawn attacks.
+    #[must_use]
     pub fn pawn_attacks(self, colour: Colour) -> PawnIter {
         let relative_north = match colour {
             Colour::White => self.north(),
@@ -411,16 +425,19 @@ impl Square {
     }
 
     /// An iterator over the squares a knight attacks.
+    #[must_use]
     pub const fn knight_attacks(self) -> KnightIter {
         KnightIter(self, 0)
     }
 
     /// An iterator over the squares a king attacks.
+    #[must_use]
     pub const fn king_attacks(self) -> KingIter {
         KingIter(self, 0)
     }
 
     /// An iterator over the squares in a `Direction`.
+    #[must_use]
     pub const fn ray_attacks(self, dir: Direction) -> RayIter {
         RayIter(self, dir)
     }
@@ -465,7 +482,7 @@ pub enum Direction {
 
 impl Direction {
     /// The `Direction` 180 degrees of the given `Direction`.
-    pub fn opposite(self) -> Self {
+    pub const fn opposite(self) -> Self {
         match self {
             Self::North => Self::South,
             Self::NorthEast => Self::SouthWest,
@@ -487,23 +504,17 @@ impl Direction {
     }
 
     /// Returns true if the direction is diagonal.
-    pub fn diagonal(self) -> bool {
-        match self {
-            Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest => true,
-            _ => false,
-        }
+    pub const fn diagonal(self) -> bool {
+        matches!(self, Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest)
     }
 
     /// Return true if the direction is orthogonal.
-    pub fn orthogonal(self) -> bool {
-        match self {
-            Self::North | Self::East | Self::West | Self::South => true,
-            _ => false,
-        }
+    pub const fn orthogonal(self) -> bool {
+        matches!(self, Self::North | Self::East | Self::West | Self::South)
     }
 
     /// Returns the 16x8 square difference of this Direction.
-    pub fn to_16x8(self) -> i16 {
+    pub const fn to_16x8(self) -> i16 {
         match self {
             Self::North => 16,
             Self::NorthEast => 17,
@@ -524,7 +535,7 @@ impl Direction {
         }
     }
 
-    pub fn to_8x8(self) -> i8 {
+    pub const fn to_8x8(self) -> i8 {
         match self {
             Self::North => 8,
             Self::NorthEast => 9,
