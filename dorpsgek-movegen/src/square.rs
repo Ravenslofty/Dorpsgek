@@ -311,22 +311,12 @@ impl Square {
             Some(Direction::SouthWest), None, None, None, None, None, None, Some(Direction::South), None, None, None, None, None, None, Some(Direction::SouthEast), None, None, Some(Direction::SouthWest), None, None, None, None, None, Some(Direction::South), None, None, None, None, None, Some(Direction::SouthEast), None, None, None, None, Some(Direction::SouthWest), None, None, None, None, Some(Direction::South), None, None, None, None, Some(Direction::SouthEast), None, None, None, None, None, None, Some(Direction::SouthWest), None, None, None, Some(Direction::South), None, None, None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, Some(Direction::SouthWest), None, None, Some(Direction::South), None, None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, None, None, Some(Direction::SouthWest), None, Some(Direction::South), None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, None, None, None, None, Some(Direction::SouthWest), Some(Direction::South), Some(Direction::SouthEast), None, None, None, None, None, None, None, Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), None, Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), None, None, None, None, None, None, None, Some(Direction::NorthWest), Some(Direction::North), Some(Direction::NorthEast), None, None, None, None, None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, Some(Direction::North), None, Some(Direction::NorthEast), None, None, None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, None, Some(Direction::North), None, None, Some(Direction::NorthEast), None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, None, None, Some(Direction::North), None, None, None, Some(Direction::NorthEast), None, None, None, None, None, None, Some(Direction::NorthWest), None, None, None, None, Some(Direction::North), None, None, None, None, Some(Direction::NorthEast), None, None, None, None, Some(Direction::NorthWest), None, None, None, None, None, Some(Direction::North), None, None, None, None, None, Some(Direction::NorthEast), None, None, Some(Direction::NorthWest), None, None, None, None, None, None, Some(Direction::North), None, None, None, None, None, None, Some(Direction::NorthEast), None,
         ];
 
-        const TO_16X12: [u8; 64] = [
-            36, 37, 38, 39, 40, 41, 42, 43,
-            52, 53, 54, 55, 56, 57, 58, 59,
-            68, 69, 70, 71, 72, 73, 74, 75,
-            84, 85, 86, 87, 88, 89, 90, 91,
-            100, 101, 102, 103, 104, 105, 106, 107,
-            116, 117, 118, 119, 120, 121, 122, 123,
-            132, 133, 134, 135, 136, 137, 138, 139,
-            148, 149, 150, 151, 152, 153, 154, 155,
-        ];
+        let to_16x12 = |sq: Self| 16 * (sq.into_inner() / 8) + (sq.into_inner() % 8) + 36;
 
-        //let to_16x12 = |sq: Self| ((16 * u8::from(Rank::from(sq))) + u8::from(File::from(sq)) + 36);
+        let dest = to_16x12(dest);
+        let from = to_16x12(self);
 
         unsafe {
-            let dest = *TO_16X12.get_unchecked(usize::from(dest.into_inner()));
-            let from = *TO_16X12.get_unchecked(usize::from(self.into_inner()));
             *DIRECTIONS.get_unchecked(usize::from(
                 dest
                     .wrapping_sub(from)
