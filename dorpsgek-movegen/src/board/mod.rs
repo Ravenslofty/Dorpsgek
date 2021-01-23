@@ -567,6 +567,9 @@ impl Board {
         // Can we capture the attacker?
         for capturer in self.data.attacks_to(attacker_square, self.side) {
             let from = self.data.square_of_piece(capturer);
+            if self.data.piece_from_bit(capturer) == Piece::King && !self.data.attacks_to(attacker_square, !self.side).empty() {
+                continue;
+            }
             v.push(Move::new(from, attacker_square, MoveType::Capture, None));
         }
 
@@ -608,7 +611,7 @@ impl Board {
             if let Some(dir) = attacker_direction {
                 // Slider attacks x-ray through the king to attack that square.
                 if let Some(xray_square) = king_square.travel(dir) {
-                    if xray_square == square {
+                    if matches!(attacker_piece, Piece::Bishop | Piece::Rook | Piece::Queen) && xray_square == square {
                         continue;
                     }
                 }
