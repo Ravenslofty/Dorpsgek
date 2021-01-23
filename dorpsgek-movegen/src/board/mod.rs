@@ -281,10 +281,16 @@ impl Board {
                 b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = None;
             }
-            MoveType::Castle
-            | MoveType::EnPassant
-            | MoveType::Promotion
-            | MoveType::CapturePromotion => todo!(),
+            MoveType::Castle => todo!("make castling moves"),
+            MoveType::EnPassant => {
+                let target_square = b.ep.unwrap().relative_south(b.side).unwrap();
+                let target_piece = b.data.piece_index(target_square).unwrap();
+                b.data.remove_piece(target_piece, true);
+                b.data.move_piece(m.from, m.dest, true, false);
+                b.ep = None;
+            },
+            MoveType::Promotion => todo!("make promotion moves"),
+            MoveType::CapturePromotion => todo!("make capture-promotion moves"),
         }
 
         b.side = !b.side;
@@ -295,138 +301,77 @@ impl Board {
     fn generate_pinned_pieces(&self, v: &mut ArrayVec<[Move; 256]>) -> Bitlist {
         let mut pinned = Bitlist::new();
 
-        let diagonal = self.data.bishops() | self.data.queens();
-        let orthogonal = self.data.rooks() | self.data.queens();
+        let sliders = self.data.bishops() | self.data.rooks() | self.data.queens();
         let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
             .peek()
             .unwrap();
         let king_square = self.data.square_of_piece(king_index);
 
-        let count_blockers = |pinner_king_dir, pinner_square| {
-            let mut blocker_count = 0;
-            for square in king_square.ray_attacks(pinner_king_dir) {
-                if self.data.has_piece(square) {
-                    // We found the pinner without finding multiple blockers; the blocker is pinned.
-                    if square == pinner_square {
-                        break;
-                    }
-
-                    blocker_count += 1;
-                }
-            }
-            blocker_count
-        };
-
-        // If a friendly piece has attacks from an enemy slider that lines up with the king, and no other blockers, consider it pinned.
-        'find_blockers: for bit in self.data.pieces_of_colour(self.side) & !self.data.kings() {
-            let blocker_square = self.data.square_of_piece(bit);
-            let attacks = self.data.attacks_to(blocker_square, !self.side);
-
-            // If the king and blocker do not share a ray, this piece cannot possibly be pinned.
-            let blocker_king_dir = match king_square.direction(blocker_square) {
+        for possible_pinner in self.data.pieces_of_colour(!self.side).and(sliders) {
+            let pinner_square = self.data.square_of_piece(possible_pinner);
+            let pinner_type = self.data.piece_from_bit(possible_pinner);
+            let pinner_king_dir = match pinner_square.direction(king_square) {
                 Some(dir) => dir,
                 None => continue,
             };
 
-            for attacker in attacks & diagonal {
-                let pinner_square = self.data.square_of_piece(attacker);
+            if !pinner_king_dir.valid_for_slider(pinner_type) {
+                continue;
+            }
 
-                // If the king and pinner do not share a ray, this piece cannot possibly pin the blocker to the king.
-                let pinner_king_dir = match king_square.direction(pinner_square) {
-                    Some(dir) => dir,
-                    None => continue,
-                };
-
-                // If the king to pinner ray and king to blocker ray are different, this piece cannot possibly pin the blocker to the king.
-                if blocker_king_dir != pinner_king_dir {
-                    continue;
+            let mut blocker = None;
+            for square in pinner_square.ray_attacks(pinner_king_dir) {
+                if square == king_square {
+                    break;
                 }
 
-                // If this is a queen, it might be an orthogonal ray; we don't care about it here.
-                if !pinner_king_dir.diagonal() {
-                    continue;
-                }
+                if let Some(piece_index) = self.data.piece_index(square) {
+                    if self.data.colour_from_square(square) == Some(!self.side) {
+                        blocker = None;
+                        break;
+                    }
 
-                // Look for blocking pieces
-                // For diagonals, simply having one extra blocker is enough.
-                if count_blockers(pinner_king_dir, pinner_square) > 1 {
-                    continue;
-                }
-
-                // This piece is pinned.
-                match self.data.piece_from_bit(bit) {
-                    Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir)),
-                    Piece::Knight | Piece::Rook | Piece::King => {} // Knights cannot move when pinned; Rooks cannot move when pinned diagonally; Kings should not be pinned.
-                    Piece::Bishop | Piece::Queen => {
-                        // Bishops/Queens can slide along the king to blocker ray.
-                        for dest in king_square.ray_attacks(pinner_king_dir) {
-                            if dest == blocker_square {
-                                continue;
-                            }
-                            if dest == pinner_square {
-                                v.push(Move::new(blocker_square, dest, MoveType::Capture, None));
-                                break;
-                            }
-                            v.push(Move::new(blocker_square, dest, MoveType::Normal, None));
+                    match blocker {
+                        Some(_) => {
+                            blocker = None;
+                            break;
+                        },
+                        None => {
+                            blocker = Some(piece_index);
                         }
                     }
                 }
-
-                pinned |= Bitlist::from(bit);
-
-                continue 'find_blockers;
             }
 
-            for attacker in attacks & orthogonal {
-                let pinner_square = self.data.square_of_piece(attacker);
+            if blocker.is_none() {
+                continue;
+            }
 
-                // If the king and pinner do not share a ray, this piece cannot possibly pin the blocker to the king.
-                let pinner_king_dir = match king_square.direction(pinner_square) {
-                    Some(dir) => dir,
-                    None => continue,
-                };
+            let blocker = blocker.unwrap();
+            let blocker_square = self.data.square_of_piece(blocker);
 
-                // If the king to pinner ray and king to blocker ray are different, this piece cannot possibly pin the blocker to the king.
-                if blocker_king_dir != pinner_king_dir {
-                    continue;
-                }
-
-                // If this is a queen, it might be a diagonal ray; we don't care about it here.
-                if pinner_king_dir.diagonal() {
-                    continue;
-                }
-
-                // Look for blocking pieces
-                let blocker_count = count_blockers(pinner_king_dir, pinner_square);
-
-                // For pieces, simply having one extra blocker is enough.
-                if self.data.piece_from_bit(bit) != Piece::Pawn && blocker_count > 1 {
-                    continue;
-                }
-
-                // This piece is pinned.
-                match self.data.piece_from_bit(bit) {
-                    Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir)),
-                    Piece::Knight | Piece::Bishop | Piece::King => {} // Knights cannot move when pinned; Rooks cannot move when pinned diagonally; Kings should not be pinned.
-                    Piece::Rook | Piece::Queen => {
-                        // Bishops/Queens can slide along the king to blocker ray.
-                        for dest in king_square.ray_attacks(pinner_king_dir) {
-                            if dest == blocker_square {
-                                continue;
-                            }
-                            if dest == pinner_square {
-                                v.push(Move::new(blocker_square, dest, MoveType::Capture, None));
-                                break;
-                            }
-                            v.push(Move::new(blocker_square, dest, MoveType::Normal, None));
-                        }
+            let mut generate_ray = || {
+                for square in king_square.ray_attacks(pinner_king_dir.opposite()) {
+                    if square == pinner_square {
+                        v.push(Move::new(blocker_square, square, MoveType::Capture, None));
+                        break;
+                    }
+                    if square != blocker_square {
+                        v.push(Move::new(blocker_square, square, MoveType::Normal, None));
                     }
                 }
+            };
 
-                pinned |= Bitlist::from(bit);
-
-                continue 'find_blockers;
+            // This piece is pinned.
+            match self.data.piece_from_bit(blocker) {
+                Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir)),
+                Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
+                Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
+                Piece::Queen => generate_ray(),
+                _ => {},
             }
+
+            pinned |= Bitlist::from(blocker);
         }
 
         pinned
@@ -520,9 +465,11 @@ impl Board {
 
             let add_en_passant = |dest: Square, v: &mut ArrayVec<[Move; 256]>| {
                 if let Some(ep) = self.ep {
-                    if let Some(Piece::Pawn) = self.data.piece_from_square(ep) {
-                        if ep == dest {
-                            push(v, from, dest, MoveType::EnPassant, None, dir);
+                    if let Some(possible_pawn) = ep.relative_south(self.side) {
+                        if let Some(Piece::Pawn) = self.data.piece_from_square(possible_pawn) {
+                            if ep == dest {
+                                push(v, from, dest, MoveType::EnPassant, None, dir);
+                            }
                         }
                     }
                 }
@@ -543,7 +490,7 @@ impl Board {
 
     /// Generate pawn-specific moves.
     fn generate_pawns(&self, v: &mut ArrayVec<[Move; 256]>, pinned: Bitlist) {
-        for pawn in self.data.pawns() & Bitlist::mask_from_colour(self.side) & !pinned {
+        for pawn in self.data.pawns().and(Bitlist::mask_from_colour(self.side)).and(!pinned) {
             let from = self.data.square_of_piece(pawn);
             self.generate_pawn(v, from, None);
         }
@@ -587,6 +534,7 @@ impl Board {
         let attacker_index = attacker_bit.peek().unwrap();
         let attacker_piece = self.data.piece_from_bit(attacker_index);
         let attacker_square = self.data.square_of_piece(attacker_index);
+        let attacker_direction = attacker_square.direction(king_square);
 
         let add_pawn_block = |v: &mut ArrayVec<[Move; 256]>, from, dest, kind| {
             if let Some(colour) = self.data.colour_from_square(from) {
@@ -601,15 +549,17 @@ impl Board {
                 match self.data.piece_from_square(from) {
                     Some(Piece::Pawn) => {
                         add_pawn_block(v, from, dest, MoveType::Normal);
-                    }
-                    None if Rank::from(dest).is_relative_fourth(self.side) => {
-                        if let Some(from) = from.relative_south(self.side) {
-                            if let Some(Piece::Pawn) = self.data.piece_from_square(from) {
-                                add_pawn_block(v, from, dest, MoveType::DoublePush);
+                    },
+                    Some(_) => {}
+                    None => {
+                        if Rank::from(dest).is_relative_fourth(self.side) {
+                            if let Some(from) = from.relative_south(self.side) {
+                                if let Some(Piece::Pawn) = self.data.piece_from_square(from) {
+                                    add_pawn_block(v, from, dest, MoveType::DoublePush);
+                                }
                             }
                         }
                     }
-                    _ => {}
                 }
             }
         };
@@ -631,8 +581,8 @@ impl Board {
 
                     // Piece moves.
                     for attacker in self.data.attacks_to(dest, self.side)
-                        & !self.data.pawns()
-                        & !self.data.kings()
+                        .and(!self.data.pawns())
+                        .and(!self.data.kings())
                     {
                         let from = self.data.square_of_piece(attacker);
                         v.push(Move::new(from, dest, MoveType::Normal, None));
@@ -643,6 +593,28 @@ impl Board {
                 }
             }
             _ => {}
+        }
+
+        // Can we move the king?
+        for square in king_square.king_attacks() {
+            if self.data.has_piece(square) {
+                // Own-piece captures are illegal, opposite-piece captures are handled elsewhere.
+                continue;
+            }
+            if !self.data.attacks_to(square, !self.side).empty() {
+                // Moving into check is illegal.
+                continue;
+            }
+            if let Some(dir) = attacker_direction {
+                // Slider attacks x-ray through the king to attack that square.
+                if let Some(xray_square) = king_square.travel(dir) {
+                    if xray_square == square {
+                        continue;
+                    }
+                }
+            }
+
+            v.push(Move::new(king_square, square, MoveType::Normal, None));
         }
     }
 
@@ -688,9 +660,9 @@ impl Board {
 
             // For every piece that attacks this square, find its location and add it to the move list.
             for attacker in self.data.attacks_to(dest, self.side)
-                & !self.data.pawns()
-                & !self.data.kings()
-                & !pinned
+                .and(!self.data.pawns())
+                .and(!self.data.kings())
+                .and(!pinned)
             {
                 let from = self.data.square_of_piece(attacker);
                 v.push(Move::new(from, dest, kind, None));

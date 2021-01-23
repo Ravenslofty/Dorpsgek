@@ -251,7 +251,7 @@ impl BoardData {
 
     /// Extend or remove slider attacks to a square.
     fn update_sliders(&mut self, square: Square, add: bool) {
-        let sliders = self.bitlist[square]
+        let sliders: Bitlist = self.bitlist[square]
             & (self.piecemask.bishops() | self.piecemask.rooks() | self.piecemask.queens());
 
         for piece in sliders {

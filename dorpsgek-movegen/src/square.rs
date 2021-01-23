@@ -15,8 +15,8 @@
  *   along with Dorpsgek.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use std::{convert::TryFrom, fmt::Display, num::NonZeroU8};
-use crate::colour::Colour;
+use std::{convert::TryFrom, fmt::{Display, Debug}, num::NonZeroU8};
+use crate::{colour::Colour, piece::Piece};
 
 /// A chessboard rank.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -212,7 +212,7 @@ impl File {
 }
 
 /// A square on a chessboard.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Square(NonZeroU8);
 
@@ -224,6 +224,12 @@ impl Default for Square {
 }
 
 impl Display for Square {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", File::from(*self), Rank::from(*self))
+    }
+}
+
+impl Debug for Square {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}{}", File::from(*self), Rank::from(*self))
     }
@@ -543,6 +549,15 @@ impl Direction {
             Self::WestSouthWest => -10,
             Self::WestNorthWest => 6,
             Self::NorthNorthWest => 15,
+        }
+    }
+
+    pub fn valid_for_slider(self, piece: Piece) -> bool {
+        match piece {
+            Piece::Bishop => self.diagonal(),
+            Piece::Rook => self.orthogonal(),
+            Piece::Queen => self.diagonal() || self.orthogonal(),
+            _ => unreachable!("piece {:?} is not a slider", piece),
         }
     }
 }

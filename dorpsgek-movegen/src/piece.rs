@@ -15,7 +15,7 @@
  *   along with Dorpsgek.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Piece {
     Pawn,
     Knight,
