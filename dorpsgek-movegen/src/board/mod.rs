@@ -502,6 +502,7 @@ impl Board {
         {
             let square = self.data.square_of_piece(piece_index);
 
+            // King moves.
             for dest in square.king_attacks() {
                 let mut kind = MoveType::Normal;
 
@@ -520,6 +521,10 @@ impl Board {
 
                 v.push(Move::new(square, dest, kind, None));
             }
+
+            // Kingside castling.
+            //if self.castle
+
         }
     }
 
@@ -680,10 +685,10 @@ impl Board {
     }
 }
 
-impl Drop for Board {
+/*impl Drop for Board {
     fn drop(&mut self) {
         if ::std::thread::panicking() {
             println!("{}", self);
         }
     }
-}
+}*/
