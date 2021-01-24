@@ -591,19 +591,26 @@ impl Iterator for KnightIter {
     type Item = Square;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let next = match self.1 {
-                0 => self.0.travel(Direction::NorthNorthEast),
-                1 => self.0.travel(Direction::EastNorthEast),
-                2 => self.0.travel(Direction::EastSouthEast),
-                3 => self.0.travel(Direction::SouthSouthEast),
-                4 => self.0.travel(Direction::SouthSouthWest),
-                5 => self.0.travel(Direction::WestSouthWest),
-                6 => self.0.travel(Direction::WestNorthWest),
-                7 => self.0.travel(Direction::NorthNorthWest),
-                _ => return None,
-            };
+        use Direction::*;
+        const KNIGHT_DIR: [Direction; 8] = [NorthNorthEast, EastNorthEast, EastSouthEast, SouthSouthEast, SouthSouthWest, WestSouthWest, WestNorthWest, NorthNorthWest];
 
+        loop {
+            /* let next = match self.1 {
+                0 => self.0.travel(),
+                1 => self.0.travel(),
+                2 => self.0.travel(),
+                3 => self.0.travel(),
+                4 => self.0.travel(),
+                5 => self.0.travel(),
+                6 => self.0.travel(),
+                7 => self.0.travel(),
+                _ => return None,
+            }; */
+            if self.1 >= 8 {
+                return None;
+            }
+
+            let next = self.0.travel(KNIGHT_DIR[self.1 as usize]);
             self.1 += 1;
 
             if next.is_some() {
