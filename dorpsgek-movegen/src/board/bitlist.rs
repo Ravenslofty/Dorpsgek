@@ -69,7 +69,14 @@ impl Bitlist {
 
     /// Return the lowest set bit of a `Bitlist` as a `PieceIndex`, if it exists.
     pub fn peek(self) -> Option<PieceIndex> {
-        PieceIndex::try_from(u8::try_from(self.0.trailing_zeros()).ok()?).ok()
+        if self.0 == 0 {
+            return None;
+        }
+        #[allow(clippy::cast_possible_truncation)]
+        let bit = self.0.trailing_zeros() as u8;
+        unsafe {
+            Some(PieceIndex::new_unchecked(bit))
+        }
     }
 
     /// Return the lowest set bit of a `Bitlist` as a `PieceIndex`, if it exists, and clear that bit.

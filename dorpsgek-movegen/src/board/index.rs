@@ -28,6 +28,10 @@ use std::{
 pub struct PieceIndex(NonZeroU8);
 
 impl PieceIndex {
+    pub unsafe fn new_unchecked(x: u8) -> Self {
+        Self(NonZeroU8::new_unchecked(x + 1))
+    }
+
     pub const fn into_inner(self) -> u8 {
         (self.0.get() - 1) & 31
     }
