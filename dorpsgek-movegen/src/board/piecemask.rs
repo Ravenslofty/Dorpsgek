@@ -47,7 +47,7 @@ impl Piecemask {
     }
 
     pub const fn bishops(&self) -> Bitlist {
-        self.pbq.and(self.nbk).and(self.rqk.invert())
+        self.pbq.and(self.nbk)
     }
 
     pub const fn rooks(&self) -> Bitlist {
@@ -55,11 +55,11 @@ impl Piecemask {
     }
 
     pub const fn queens(&self) -> Bitlist {
-        self.pbq.and(self.nbk.invert()).and(self.rqk)
+        self.pbq.and(self.rqk)
     }
 
     pub const fn kings(&self) -> Bitlist {
-        self.pbq.invert().and(self.nbk).and(self.rqk)
+        self.nbk.and(self.rqk)
     }
 
     pub const fn white(&self) -> Bitlist {

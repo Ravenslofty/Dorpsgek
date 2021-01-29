@@ -191,15 +191,15 @@ impl BoardData {
 
     /// Add or remove attacks for a square.
     fn update_attacks(&mut self, square: Square, bit: PieceIndex, piece: Piece, add: bool, skip_dir: Option<Direction>) {
-        let update = |b: &mut BitlistArray, dest: Square| {
+        let update = |bitlist: &mut BitlistArray, dest: Square| {
             if add {
-                b.add_piece(dest, bit);
+                bitlist.add_piece(dest, bit);
             } else {
-                b.remove_piece(dest, bit);
+                bitlist.remove_piece(dest, bit);
             }
         };
 
-        let mut slide = |dir: Direction, square: Square| {
+        let slide = |bitlist: &mut BitlistArray, index: &PieceIndexArray, dir: Direction, square: Square| {
             if let Some(slide_dir) = skip_dir {
                 if slide_dir == dir || slide_dir == dir.opposite() {
                     return;
@@ -207,10 +207,16 @@ impl BoardData {
             }
 
             for dest in square.ray_attacks(dir) {
-                update(&mut self.bitlist, dest);
-                if self.index[dest].is_some() {
+                update(bitlist, dest);
+                if index[dest].is_some() {
                     break;
                 }
+            }
+        };
+
+        let leap = |b: &mut BitlistArray, dir: Direction, square: Square| {
+            if let Some(dest) = square.travel(dir) {
+                update(b, dest);
             }
         };
 
@@ -218,33 +224,40 @@ impl BoardData {
             Piece::Pawn => square
                 .pawn_attacks(Colour::from(bit))
                 .for_each(|dest| update(&mut self.bitlist, dest)),
-            Piece::Knight => square
-                .knight_attacks()
-                .for_each(|dest| update(&mut self.bitlist, dest)),
+            Piece::Knight => {
+                leap(&mut self.bitlist, Direction::NorthNorthEast, square);
+                leap(&mut self.bitlist, Direction::EastNorthEast, square);
+                leap(&mut self.bitlist, Direction::EastSouthEast, square);
+                leap(&mut self.bitlist, Direction::SouthSouthEast, square);
+                leap(&mut self.bitlist, Direction::SouthSouthWest, square);
+                leap(&mut self.bitlist, Direction::WestSouthWest, square);
+                leap(&mut self.bitlist, Direction::WestNorthWest, square);
+                leap(&mut self.bitlist, Direction::NorthNorthWest, square);
+            },
             Piece::King => square
                 .king_attacks()
                 .for_each(|dest| update(&mut self.bitlist, dest)),
             Piece::Bishop => {
-                slide(Direction::NorthEast, square);
-                slide(Direction::SouthEast, square);
-                slide(Direction::SouthWest, square);
-                slide(Direction::NorthWest, square);
+                slide(&mut self.bitlist, &self.index, Direction::NorthEast, square);
+                slide(&mut self.bitlist, &self.index, Direction::SouthEast, square);
+                slide(&mut self.bitlist, &self.index, Direction::SouthWest, square);
+                slide(&mut self.bitlist, &self.index, Direction::NorthWest, square);
             },
             Piece::Rook => {
-                slide(Direction::North, square);
-                slide(Direction::East, square);
-                slide(Direction::South, square);
-                slide(Direction::West, square);
+                slide(&mut self.bitlist, &self.index, Direction::North, square);
+                slide(&mut self.bitlist, &self.index, Direction::East, square);
+                slide(&mut self.bitlist, &self.index, Direction::South, square);
+                slide(&mut self.bitlist, &self.index, Direction::West, square);
             },
             Piece::Queen => {
-                slide(Direction::North, square);
-                slide(Direction::East, square);
-                slide(Direction::South, square);
-                slide(Direction::West, square);
-                slide(Direction::NorthEast, square);
-                slide(Direction::SouthEast, square);
-                slide(Direction::SouthWest, square);
-                slide(Direction::NorthWest, square);
+                slide(&mut self.bitlist, &self.index, Direction::North, square);
+                slide(&mut self.bitlist, &self.index, Direction::East, square);
+                slide(&mut self.bitlist, &self.index, Direction::South, square);
+                slide(&mut self.bitlist, &self.index, Direction::West, square);
+                slide(&mut self.bitlist, &self.index, Direction::NorthEast, square);
+                slide(&mut self.bitlist, &self.index, Direction::SouthEast, square);
+                slide(&mut self.bitlist, &self.index, Direction::SouthWest, square);
+                slide(&mut self.bitlist, &self.index, Direction::NorthWest, square);
             }
         };
     }

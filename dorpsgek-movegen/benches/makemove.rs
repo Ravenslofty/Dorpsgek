@@ -49,12 +49,18 @@ pub fn perft_bench(c: &mut Criterion<PosixTime>) {
 
     let mut group = c.benchmark_group("perft");
 
+    group.sample_size(1_000);
+    group.significance_level(0.005);
+    group.noise_threshold(0.025);
+
     group.throughput(Throughput::Elements(20));
     group.bench_with_input("1", &board, |b, board| {
         b.iter(|| {
             assert_eq!(perft(board, 1), 20);
         })
     });
+
+    group.sample_size(100);
 
     group.throughput(Throughput::Elements(400));
     group.bench_with_input("2", &board, |b, board| {
@@ -63,6 +69,8 @@ pub fn perft_bench(c: &mut Criterion<PosixTime>) {
         })
     });
 
+    group.sample_size(100);
+
     group.throughput(Throughput::Elements(8902));
     group.bench_with_input("3", &board, |b, board| {
         b.iter(|| {
@@ -70,10 +78,46 @@ pub fn perft_bench(c: &mut Criterion<PosixTime>) {
         })
     });
 
-    group.throughput(Throughput::Elements(197_281));
+    /* group.throughput(Throughput::Elements(197_281));
     group.bench_with_input("4", &board, |b, board| {
         b.iter(|| {
             assert_eq!(perft(board, 4), 197_281);
+        })
+    }); */
+
+    group.finish();
+
+    let board =
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+
+    let mut group = c.benchmark_group("kiwipete");
+
+    group.sample_size(1_000);
+    group.significance_level(0.005);
+    group.noise_threshold(0.025);
+
+    group.throughput(Throughput::Elements(46));
+    group.bench_with_input("1", &board, |b, board| {
+        b.iter(|| {
+            assert_eq!(perft(board, 1), 46);
+        })
+    });
+
+    group.sample_size(100);
+
+    group.throughput(Throughput::Elements(1866));
+    group.bench_with_input("2", &board, |b, board| {
+        b.iter(|| {
+            assert_eq!(perft(board, 2), 1866);
+        })
+    });
+
+    group.sample_size(20);
+
+    group.throughput(Throughput::Elements(86677));
+    group.bench_with_input("3", &board, |b, board| {
+        b.iter(|| {
+            assert_eq!(perft(board, 3), 86677);
         })
     });
 
