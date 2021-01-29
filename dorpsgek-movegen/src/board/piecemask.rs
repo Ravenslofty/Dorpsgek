@@ -96,7 +96,9 @@ impl Piecemask {
     ///
     /// Panics if adding a piece would give `colour` more than 16 pieces.
     pub fn add_piece(&mut self, piece: Piece, colour: Colour) -> PieceIndex {
-        let piece_index = (self.empty() & Bitlist::mask_from_colour(colour)).peek().expect("no more room to add pieces");
+        let piece_index = (self.empty() & Bitlist::mask_from_colour(colour))
+            .peek()
+            .expect("no more room to add pieces");
         let yes = Bitlist::from(piece_index);
         let no = Bitlist::new();
 

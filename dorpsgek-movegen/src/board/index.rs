@@ -102,7 +102,7 @@ impl PieceIndexArray {
         }
     }
 
-    /// Move a piece from 
+    /// Move a piece from
     pub fn move_piece(
         &mut self,
         piece_index: PieceIndex,

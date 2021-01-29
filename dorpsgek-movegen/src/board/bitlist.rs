@@ -74,9 +74,7 @@ impl Bitlist {
         }
         #[allow(clippy::cast_possible_truncation)]
         let bit = self.0.trailing_zeros() as u8;
-        unsafe {
-            Some(PieceIndex::new_unchecked(bit))
-        }
+        unsafe { Some(PieceIndex::new_unchecked(bit)) }
     }
 
     /// Return the lowest set bit of a `Bitlist` as a `PieceIndex`, if it exists, and clear that bit.
@@ -237,7 +235,11 @@ impl BitlistArray {
     pub fn add_piece(&mut self, square: Square, piece: PieceIndex) {
         let index = usize::from(square.into_inner());
         let piece = Bitlist::from(piece);
-        debug_assert!(!self.0[index].contains(piece), "attempted to add pre-existing piece attack on {}", square);
+        debug_assert!(
+            !self.0[index].contains(piece),
+            "attempted to add pre-existing piece attack on {}",
+            square
+        );
         self.0[index] |= piece;
     }
 
@@ -245,7 +247,11 @@ impl BitlistArray {
     pub fn remove_piece(&mut self, square: Square, piece: PieceIndex) {
         let index = usize::from(square.into_inner());
         let piece = Bitlist::from(piece);
-        debug_assert!(self.0[index].contains(piece), "attempted to remove nonexistent piece attack on {}", square);
+        debug_assert!(
+            self.0[index].contains(piece),
+            "attempted to remove nonexistent piece attack on {}",
+            square
+        );
         self.0[index] &= !piece;
     }
 }

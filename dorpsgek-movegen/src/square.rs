@@ -15,8 +15,12 @@
  *   along with Dorpsgek.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use std::{convert::TryFrom, fmt::{Display, Debug}, num::NonZeroU8};
 use crate::{colour::Colour, piece::Piece};
+use std::{
+    convert::TryFrom,
+    fmt::{Debug, Display},
+    num::NonZeroU8,
+};
 
 /// A chessboard rank.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -314,7 +318,246 @@ impl Square {
     #[must_use]
     pub fn direction(self, dest: Self) -> Option<Direction> {
         const DIRECTIONS: [Option<Direction>; 240] = [
-            Some(Direction::SouthWest), None, None, None, None, None, None, Some(Direction::South), None, None, None, None, None, None, Some(Direction::SouthEast), None, None, Some(Direction::SouthWest), None, None, None, None, None, Some(Direction::South), None, None, None, None, None, Some(Direction::SouthEast), None, None, None, None, Some(Direction::SouthWest), None, None, None, None, Some(Direction::South), None, None, None, None, Some(Direction::SouthEast), None, None, None, None, None, None, Some(Direction::SouthWest), None, None, None, Some(Direction::South), None, None, None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, Some(Direction::SouthWest), None, None, Some(Direction::South), None, None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, None, None, Some(Direction::SouthWest), None, Some(Direction::South), None, Some(Direction::SouthEast), None, None, None, None, None, None, None, None, None, None, None, None, Some(Direction::SouthWest), Some(Direction::South), Some(Direction::SouthEast), None, None, None, None, None, None, None, Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), Some(Direction::West), None, Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), Some(Direction::East), None, None, None, None, None, None, None, Some(Direction::NorthWest), Some(Direction::North), Some(Direction::NorthEast), None, None, None, None, None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, Some(Direction::North), None, Some(Direction::NorthEast), None, None, None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, None, Some(Direction::North), None, None, Some(Direction::NorthEast), None, None, None, None, None, None, None, None, Some(Direction::NorthWest), None, None, None, Some(Direction::North), None, None, None, Some(Direction::NorthEast), None, None, None, None, None, None, Some(Direction::NorthWest), None, None, None, None, Some(Direction::North), None, None, None, None, Some(Direction::NorthEast), None, None, None, None, Some(Direction::NorthWest), None, None, None, None, None, Some(Direction::North), None, None, None, None, None, Some(Direction::NorthEast), None, None, Some(Direction::NorthWest), None, None, None, None, None, None, Some(Direction::North), None, None, None, None, None, None, Some(Direction::NorthEast), None,
+            Some(Direction::SouthWest),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::South),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::SouthEast),
+            None,
+            None,
+            Some(Direction::SouthWest),
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::South),
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::SouthEast),
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::SouthWest),
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::South),
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::SouthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::SouthWest),
+            None,
+            None,
+            None,
+            Some(Direction::South),
+            None,
+            None,
+            None,
+            Some(Direction::SouthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::SouthWest),
+            None,
+            None,
+            Some(Direction::South),
+            None,
+            None,
+            Some(Direction::SouthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::SouthWest),
+            None,
+            Some(Direction::South),
+            None,
+            Some(Direction::SouthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::SouthWest),
+            Some(Direction::South),
+            Some(Direction::SouthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::West),
+            Some(Direction::West),
+            Some(Direction::West),
+            Some(Direction::West),
+            Some(Direction::West),
+            Some(Direction::West),
+            Some(Direction::West),
+            None,
+            Some(Direction::East),
+            Some(Direction::East),
+            Some(Direction::East),
+            Some(Direction::East),
+            Some(Direction::East),
+            Some(Direction::East),
+            Some(Direction::East),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthWest),
+            Some(Direction::North),
+            Some(Direction::NorthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthWest),
+            None,
+            Some(Direction::North),
+            None,
+            Some(Direction::NorthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthWest),
+            None,
+            None,
+            Some(Direction::North),
+            None,
+            None,
+            Some(Direction::NorthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthWest),
+            None,
+            None,
+            None,
+            Some(Direction::North),
+            None,
+            None,
+            None,
+            Some(Direction::NorthEast),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthWest),
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::North),
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthEast),
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthWest),
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::North),
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthEast),
+            None,
+            None,
+            Some(Direction::NorthWest),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::North),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(Direction::NorthEast),
+            None,
         ];
 
         let to_16x12 = |sq: Self| 16 * (sq.into_inner() / 8) + (sq.into_inner() % 8) + 36;
@@ -322,13 +565,7 @@ impl Square {
         let dest = to_16x12(dest);
         let from = to_16x12(self);
 
-        unsafe {
-            *DIRECTIONS.get_unchecked(usize::from(
-                dest
-                    .wrapping_sub(from)
-                    .wrapping_add(119),
-            ))
-        }
+        unsafe { *DIRECTIONS.get_unchecked(usize::from(dest.wrapping_sub(from).wrapping_add(119))) }
     }
 
     /// Return the `Square` in a given `Direction`, if one exists.
@@ -501,7 +738,10 @@ impl Direction {
 
     /// Returns true if the direction is diagonal.
     pub const fn diagonal(self) -> bool {
-        matches!(self, Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest)
+        matches!(
+            self,
+            Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest
+        )
     }
 
     /// Return true if the direction is orthogonal.
@@ -592,7 +832,16 @@ impl Iterator for KnightIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         use Direction::*;
-        const KNIGHT_DIR: [Direction; 8] = [NorthNorthEast, EastNorthEast, EastSouthEast, SouthSouthEast, SouthSouthWest, WestSouthWest, WestNorthWest, NorthNorthWest];
+        const KNIGHT_DIR: [Direction; 8] = [
+            NorthNorthEast,
+            EastNorthEast,
+            EastSouthEast,
+            SouthSouthEast,
+            SouthSouthWest,
+            WestSouthWest,
+            WestNorthWest,
+            NorthNorthWest,
+        ];
 
         loop {
             if self.1 >= 8 {
@@ -630,7 +879,9 @@ impl Iterator for KingIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         use Direction::*;
-        const KING_DIR: [Direction; 8] = [North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest];
+        const KING_DIR: [Direction; 8] = [
+            North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest,
+        ];
 
         loop {
             if self.1 >= 8 {

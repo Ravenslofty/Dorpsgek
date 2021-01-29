@@ -105,7 +105,9 @@ impl BoardData {
 
     /// Given a piece index, return its piece type.
     pub fn piece_from_bit(&self, bit: PieceIndex) -> Piece {
-        self.piecemask.piece(bit).expect("piece index corresponds to invalid piece")
+        self.piecemask
+            .piece(bit)
+            .expect("piece index corresponds to invalid piece")
     }
 
     /// Given a square, return the piece type of it, if any.
@@ -145,11 +147,23 @@ impl BoardData {
     }
 
     /// Move a piece from a square to another square.
-    pub fn move_piece(&mut self, from_square: Square, to_square: Square, update: bool, quiet: bool) {
+    pub fn move_piece(
+        &mut self,
+        from_square: Square,
+        to_square: Square,
+        update: bool,
+        quiet: bool,
+    ) {
         let piece_index =
             self.index[from_square].expect("attempted to move piece from empty square");
         let piece = self.piece_from_bit(piece_index);
-        let slide_dir = from_square.direction(to_square).and_then(|dir| if matches!(piece, Piece::Bishop | Piece::Rook | Piece::Queen) && quiet { Some(dir) } else { None } );
+        let slide_dir = from_square.direction(to_square).and_then(|dir| {
+            if matches!(piece, Piece::Bishop | Piece::Rook | Piece::Queen) && quiet {
+                Some(dir)
+            } else {
+                None
+            }
+        });
 
         if update {
             self.update_attacks(from_square, piece_index, piece, false, slide_dir);
@@ -190,7 +204,14 @@ impl BoardData {
     }
 
     /// Add or remove attacks for a square.
-    fn update_attacks(&mut self, square: Square, bit: PieceIndex, piece: Piece, add: bool, skip_dir: Option<Direction>) {
+    fn update_attacks(
+        &mut self,
+        square: Square,
+        bit: PieceIndex,
+        piece: Piece,
+        add: bool,
+        skip_dir: Option<Direction>,
+    ) {
         let update = |bitlist: &mut BitlistArray, dest: Square| {
             if add {
                 bitlist.add_piece(dest, bit);
@@ -199,7 +220,10 @@ impl BoardData {
             }
         };
 
-        let slide = |bitlist: &mut BitlistArray, index: &PieceIndexArray, dir: Direction, square: Square| {
+        let slide = |bitlist: &mut BitlistArray,
+                     index: &PieceIndexArray,
+                     dir: Direction,
+                     square: Square| {
             if let Some(slide_dir) = skip_dir {
                 if slide_dir == dir || slide_dir == dir.opposite() {
                     return;
@@ -233,7 +257,7 @@ impl BoardData {
                 leap(&mut self.bitlist, Direction::WestSouthWest, square);
                 leap(&mut self.bitlist, Direction::WestNorthWest, square);
                 leap(&mut self.bitlist, Direction::NorthNorthWest, square);
-            },
+            }
             Piece::King => square
                 .king_attacks()
                 .for_each(|dest| update(&mut self.bitlist, dest)),
@@ -242,13 +266,13 @@ impl BoardData {
                 slide(&mut self.bitlist, &self.index, Direction::SouthEast, square);
                 slide(&mut self.bitlist, &self.index, Direction::SouthWest, square);
                 slide(&mut self.bitlist, &self.index, Direction::NorthWest, square);
-            },
+            }
             Piece::Rook => {
                 slide(&mut self.bitlist, &self.index, Direction::North, square);
                 slide(&mut self.bitlist, &self.index, Direction::East, square);
                 slide(&mut self.bitlist, &self.index, Direction::South, square);
                 slide(&mut self.bitlist, &self.index, Direction::West, square);
-            },
+            }
             Piece::Queen => {
                 slide(&mut self.bitlist, &self.index, Direction::North, square);
                 slide(&mut self.bitlist, &self.index, Direction::East, square);
@@ -276,7 +300,7 @@ impl BoardData {
                     } else {
                         self.bitlist.remove_piece(dest, piece);
                     }
-    
+
                     if self.index[dest].is_some() {
                         break;
                     }

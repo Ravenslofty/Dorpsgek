@@ -140,7 +140,9 @@ impl Board {
     #[inline]
     pub fn illegal(&self) -> bool {
         #[allow(clippy::option_if_let_else)]
-        if let Some(king_index) = (self.data.kings() & self.data.pieces_of_colour(!self.side)).peek() {
+        if let Some(king_index) =
+            (self.data.kings() & self.data.pieces_of_colour(!self.side)).peek()
+        {
             let king_square = self.data.square_of_piece(king_index);
             return !self.data.attacks_to(king_square, self.side).empty();
         }
@@ -288,7 +290,7 @@ impl Board {
                 b.data.remove_piece(target_piece, true);
                 b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = None;
-            },
+            }
             MoveType::Promotion => todo!("make promotion moves"),
             MoveType::CapturePromotion => todo!("make capture-promotion moves"),
         }
@@ -335,7 +337,7 @@ impl Board {
                         Some(_) => {
                             blocker = None;
                             break;
-                        },
+                        }
                         None => {
                             blocker = Some(piece_index);
                         }
@@ -368,7 +370,7 @@ impl Board {
                 Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
                 Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
                 Piece::Queen => generate_ray(),
-                _ => {},
+                _ => {}
             }
 
             pinned |= Bitlist::from(blocker);
@@ -379,14 +381,12 @@ impl Board {
 
     /// Generate pawn-specific moves.
     fn generate_pawn(&self, v: &mut ArrayVec<[Move; 256]>, from: Square, dir: Option<Direction>) {
-        let push = |
-            v: &mut ArrayVec<[Move; 256]>,
-            from: Square,
-            dest: Square,
-            kind: MoveType,
-            prom: Option<Piece>,
-            dir: Option<Direction>,
-        | {
+        let push = |v: &mut ArrayVec<[Move; 256]>,
+                    from: Square,
+                    dest: Square,
+                    kind: MoveType,
+                    prom: Option<Piece>,
+                    dir: Option<Direction>| {
             if let Some(dir) = dir {
                 if let Some(move_dir) = from.direction(dest) {
                     if dir != move_dir && dir != move_dir.opposite() {
@@ -490,7 +490,12 @@ impl Board {
 
     /// Generate pawn-specific moves.
     fn generate_pawns(&self, v: &mut ArrayVec<[Move; 256]>, pinned: Bitlist) {
-        for pawn in self.data.pawns().and(Bitlist::mask_from_colour(self.side)).and(!pinned) {
+        for pawn in self
+            .data
+            .pawns()
+            .and(Bitlist::mask_from_colour(self.side))
+            .and(!pinned)
+        {
             let from = self.data.square_of_piece(pawn);
             self.generate_pawn(v, from, None);
         }
@@ -524,7 +529,6 @@ impl Board {
 
             // Kingside castling.
             //if self.castle
-
         }
     }
 
@@ -554,7 +558,7 @@ impl Board {
                 match self.data.piece_from_square(from) {
                     Some(Piece::Pawn) => {
                         add_pawn_block(v, from, dest, MoveType::Normal);
-                    },
+                    }
                     Some(_) => {}
                     None => {
                         if Rank::from(dest).is_relative_fourth(self.side) {
@@ -572,7 +576,9 @@ impl Board {
         // Can we capture the attacker?
         for capturer in self.data.attacks_to(attacker_square, self.side) {
             let from = self.data.square_of_piece(capturer);
-            if self.data.piece_from_bit(capturer) == Piece::King && !self.data.attacks_to(attacker_square, !self.side).empty() {
+            if self.data.piece_from_bit(capturer) == Piece::King
+                && !self.data.attacks_to(attacker_square, !self.side).empty()
+            {
                 continue;
             }
             v.push(Move::new(from, attacker_square, MoveType::Capture, None));
@@ -588,7 +594,9 @@ impl Board {
                     }
 
                     // Piece moves.
-                    for attacker in self.data.attacks_to(dest, self.side)
+                    for attacker in self
+                        .data
+                        .attacks_to(dest, self.side)
                         .and(!self.data.pawns())
                         .and(!self.data.kings())
                     {
@@ -616,7 +624,9 @@ impl Board {
             if let Some(dir) = attacker_direction {
                 // Slider attacks x-ray through the king to attack that square.
                 if let Some(xray_square) = king_square.travel(dir) {
-                    if matches!(attacker_piece, Piece::Bishop | Piece::Rook | Piece::Queen) && xray_square == square {
+                    if matches!(attacker_piece, Piece::Bishop | Piece::Rook | Piece::Queen)
+                        && xray_square == square
+                    {
                         continue;
                     }
                 }
@@ -667,7 +677,9 @@ impl Board {
             }
 
             // For every piece that attacks this square, find its location and add it to the move list.
-            for attacker in self.data.attacks_to(dest, self.side)
+            for attacker in self
+                .data
+                .attacks_to(dest, self.side)
                 .and(!self.data.pawns())
                 .and(!self.data.kings())
                 .and(!pinned)
