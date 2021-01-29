@@ -751,24 +751,10 @@ impl Direction {
 
     /// Returns the 16x8 square difference of this Direction.
     pub const fn to_16x8(self) -> i16 {
-        match self {
-            Self::North => 16,
-            Self::NorthEast => 17,
-            Self::East => 1,
-            Self::SouthEast => -15,
-            Self::South => -16,
-            Self::SouthWest => -17,
-            Self::West => -1,
-            Self::NorthWest => 15,
-            Self::NorthNorthEast => 33,
-            Self::EastNorthEast => 18,
-            Self::EastSouthEast => -14,
-            Self::SouthSouthEast => -31,
-            Self::SouthSouthWest => -33,
-            Self::WestSouthWest => -18,
-            Self::WestNorthWest => 14,
-            Self::NorthNorthWest => 31,
-        }
+        const VECTORS: [i16; 16] = [
+            16, 33, 17, 18, 1, -14, -15, -31, -16, -33, -17, -18, -1, 14, 15, 31
+        ];
+        VECTORS[self as usize]
     }
 
     pub const fn to_8x8(self) -> i8 {
