@@ -15,12 +15,7 @@
  *   along with Dorpsgek.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::{
-    chessmove::{Move, MoveType},
-    colour::Colour,
-    piece::Piece,
-    square::{Direction, File, Rank, Square},
-};
+use crate::{chessmove::{Move, MoveType}, colour::Colour, piece::Piece, square::{Direction, File, Rank, Square, Square16x8}};
 use std::{
     convert::{TryFrom, TryInto},
     ffi::CString,
@@ -308,11 +303,13 @@ impl Board {
             .peek()
             .unwrap();
         let king_square = self.data.square_of_piece(king_index);
+        let king_square_16x8 = Square16x8::from_square(king_square);
 
         for possible_pinner in self.data.pieces_of_colour(!self.side).and(sliders) {
             let pinner_square = self.data.square_of_piece(possible_pinner);
+            let pinner_square_16x8 = Square16x8::from_square(pinner_square);
             let pinner_type = self.data.piece_from_bit(possible_pinner);
-            let pinner_king_dir = match pinner_square.direction(king_square) {
+            let pinner_king_dir = match pinner_square_16x8.direction(king_square_16x8) {
                 Some(dir) => dir,
                 None => continue,
             };
@@ -322,7 +319,7 @@ impl Board {
             }
 
             let mut blocker = None;
-            for square in pinner_square.ray_attacks(pinner_king_dir) {
+            for square in pinner_square_16x8.ray_attacks(pinner_king_dir) {
                 if square == king_square {
                     break;
                 }
@@ -353,7 +350,7 @@ impl Board {
             let blocker_square = self.data.square_of_piece(blocker);
 
             let mut generate_ray = || {
-                for square in king_square.ray_attacks(pinner_king_dir.opposite()) {
+                for square in king_square_16x8.ray_attacks(pinner_king_dir.opposite()) {
                     if square == pinner_square {
                         v.push(Move::new(blocker_square, square, MoveType::Capture, None));
                         break;
@@ -539,6 +536,7 @@ impl Board {
             .peek()
             .unwrap();
         let king_square = self.data.square_of_piece(king_index);
+        let king_square_16x8 = Square16x8::from_square(king_square);
         let attacker_bit = self.data.attacks_to(king_square, !self.side);
         let attacker_index = attacker_bit.peek().unwrap();
         let attacker_piece = self.data.piece_from_bit(attacker_index);
@@ -588,7 +586,7 @@ impl Board {
         match attacker_piece {
             Piece::Bishop | Piece::Rook | Piece::Queen => {
                 let direction = king_square.direction(attacker_square).unwrap();
-                for dest in king_square.ray_attacks(direction) {
+                for dest in king_square_16x8.ray_attacks(direction) {
                     if dest == attacker_square {
                         break;
                     }

@@ -21,11 +21,7 @@ use super::{
     piecelist::Piecelist,
     piecemask::Piecemask,
 };
-use crate::{
-    colour::Colour,
-    piece::Piece,
-    square::{Direction, Square},
-};
+use crate::{colour::Colour, piece::Piece, square::{Direction, Square, Square16x8}};
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
@@ -230,7 +226,7 @@ impl BoardData {
                 }
             }
 
-            for dest in square.ray_attacks(dir) {
+            for dest in Square16x8::from_square(square).ray_attacks(dir) {
                 update(bitlist, dest);
                 if index[dest].is_some() {
                     break;
@@ -291,8 +287,9 @@ impl BoardData {
         let sliders = self.bitlist[square]
             & (self.piecemask.bishops() | self.piecemask.rooks() | self.piecemask.queens());
 
+        let square = Square16x8::from_square(square);
         for piece in sliders {
-            let attacker = self.piecelist.get(piece);
+            let attacker = Square16x8::from_square(self.piecelist.get(piece));
             if let Some(direction) = attacker.direction(square) {
                 for dest in square.ray_attacks(direction) {
                     if add {
