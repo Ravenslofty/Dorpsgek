@@ -15,6 +15,8 @@
  *   along with Dorpsgek.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+use std::hint::unreachable_unchecked;
+
 use super::{
     bitlist::{Bitlist, BitlistArray},
     index::{PieceIndex, PieceIndexArray},
@@ -164,7 +166,7 @@ impl BoardData {
         if update {
             self.update_attacks(from_square, piece_index, piece, false, slide_dir);
             self.update_sliders(from_square, true);
-            if slide_dir.is_some() && quiet {
+            if slide_dir.is_some() {
                 self.bitlist.add_piece(from_square, piece_index);
             }
         }
@@ -173,12 +175,14 @@ impl BoardData {
         self.index.move_piece(piece_index, from_square, to_square);
 
         if update {
-            self.update_attacks(to_square, piece_index, piece, true, slide_dir);
-            self.update_sliders(to_square, false);
-            if slide_dir.is_some() && quiet {
+            if slide_dir.is_some() {
                 self.bitlist.remove_piece(to_square, piece_index);
             }
+            self.update_attacks(to_square, piece_index, piece, true, slide_dir);
+            self.update_sliders(to_square, false);
         }
+
+        debug_assert!(!self.bitlist[to_square].contains(piece_index.into()), "piece on {} cannot attack itself", to_square);
     }
 
     /// Rebuild the attack set for the board.
@@ -210,6 +214,7 @@ impl BoardData {
     ) {
         let update = |bitlist: &mut BitlistArray, dest: Square| {
             if add {
+                debug_assert!(dest != square);
                 bitlist.add_piece(dest, bit);
             } else {
                 bitlist.remove_piece(dest, bit);
@@ -239,6 +244,8 @@ impl BoardData {
                 update(b, dest);
             }
         };
+
+        debug_assert!(!self.bitlist[square].contains(bit.into()), "{:?} on {} cannot attack itself", self.piece_from_square(square), square);
 
         match piece {
             Piece::Pawn => square
@@ -279,7 +286,9 @@ impl BoardData {
                 slide(&mut self.bitlist, &self.index, Direction::SouthWest, square);
                 slide(&mut self.bitlist, &self.index, Direction::NorthWest, square);
             }
-        };
+        }
+
+        debug_assert!(!self.bitlist[square].contains(bit.into()), "{:?} on {} cannot attack itself", self.piece_from_square(square), square);
     }
 
     /// Extend or remove slider attacks to a square.
@@ -302,6 +311,10 @@ impl BoardData {
                         break;
                     }
                 }
+            } else {
+                let attacker = attacker.to_square().unwrap();
+                let square = square.to_square().unwrap();
+                panic!("no direction between {:?} {} and {:?} {}", self.piece_from_square(attacker), attacker, self.piece_from_square(square), square);
             }
         }
     }
