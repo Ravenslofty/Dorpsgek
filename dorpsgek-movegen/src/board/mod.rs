@@ -414,9 +414,6 @@ impl Board {
             let blocker_square = self.data.square_of_piece(blocker);
 
             let mut generate_ray = || {
-                if in_check {
-                    return;
-                }
                 for square in king_square_16x8.ray_attacks(pinner_king_dir.opposite()) {
                     if square == pinner_square {
                         v.push(Move::new(blocker_square, square, MoveType::Capture, None));
@@ -429,12 +426,14 @@ impl Board {
             };
 
             // This piece is pinned.
-            match self.data.piece_from_bit(blocker) {
-                Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir)),
-                Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
-                Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
-                Piece::Queen => generate_ray(),
-                _ => {}
+            if !in_check {
+                match self.data.piece_from_bit(blocker) {
+                    Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir)),
+                    Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
+                    Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
+                    Piece::Queen => generate_ray(),
+                    _ => {}
+                }
             }
 
             pinned |= Bitlist::from(blocker);
@@ -794,10 +793,10 @@ impl Board {
     }
 }
 
-impl Drop for Board {
+/* impl Drop for Board {
     fn drop(&mut self) {
         if ::std::thread::panicking() {
             println!("{}", self);
         }
     }
-}
+} */
