@@ -19,7 +19,6 @@
 //#![forbid(missing_docs)]
 #![warn(rust_2018_idioms)]
 #![warn(clippy::pedantic, clippy::nursery, clippy::perf)]
-#![feature(const_fn)]
 
 //! Dorpsgek is a chess program.
 

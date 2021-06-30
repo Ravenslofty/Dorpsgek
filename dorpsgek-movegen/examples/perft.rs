@@ -42,9 +42,10 @@ pub fn divide(board: &Board, depth: u32) -> u64 {
 }
 
 fn main() {
-    //let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
-    let board =
-        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-    let nodes = divide(&board, 6);
-    println!("Perft 1: {}", nodes);
+    let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -  0 1").unwrap();
+    //let board =
+    //    Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+    let depth = 5;
+    let nodes = divide(&board, depth);
+    println!("Perft {}: {}", depth, nodes);
 }

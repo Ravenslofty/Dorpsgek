@@ -28,7 +28,7 @@ use std::{
 pub struct PieceIndex(NonZeroU8);
 
 impl PieceIndex {
-    pub unsafe fn new_unchecked(x: u8) -> Self {
+    pub const unsafe fn new_unchecked(x: u8) -> Self {
         Self(NonZeroU8::new_unchecked(x + 1))
     }
 

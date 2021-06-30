@@ -515,7 +515,7 @@ impl Square16x8 {
 }
 
 /// A square on a chessboard.
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Square(NonZeroU8);
 

@@ -41,7 +41,7 @@ pub struct Board {
     /// The side to move.
     side: Colour,
     /// Castling rights, if any.
-    castle: u8,
+    castle: (bool, bool, bool, bool),
     /// En-passant square, if any.
     ep: Option<Square>,
 }
@@ -93,16 +93,16 @@ impl Display for Board {
         } else {
             writeln!(f, "Black to move.")?;
         }
-        if self.castle & 1 != 0 {
+        if self.castle.0 {
             write!(f, "K")?;
         }
-        if self.castle & 2 != 0 {
+        if self.castle.1 {
             write!(f, "Q")?;
         }
-        if self.castle & 4 != 0 {
+        if self.castle.2 {
             write!(f, "k")?;
         }
-        if self.castle & 8 != 0 {
+        if self.castle.3 {
             write!(f, "q")?;
         }
         writeln!(f)?;
@@ -123,7 +123,7 @@ impl Board {
     pub const fn new() -> Self {
         Self {
             side: Colour::White,
-            castle: 0,
+            castle: (false, false, false, false),
             ep: None,
             data: BoardData::new(),
         }
@@ -155,6 +155,9 @@ impl Board {
     }
 
     /// Parse a position in Forsyth-Edwards Notation into a board.
+    ///
+    /// # Panics
+    /// Panics when invalid FEN is input.
     #[must_use]
     #[allow(clippy::missing_inline_in_public_items)]
     pub fn from_fen_bytes(fen: &[u8]) -> Option<Self> {
@@ -171,7 +174,7 @@ impl Board {
                     let mut i = 0;
                     while i < length {
                         file += 1;
-                        i += 1
+                        i += 1;
                     }
                 } else {
                     let piece = match c.to_ascii_lowercase() {
@@ -195,14 +198,14 @@ impl Board {
 
                     b.data.add_piece(piece, colour, square, false);
 
-                    file += 1
+                    file += 1;
                 }
                 idx += 1;
-                c = fen[idx]
+                c = fen[idx];
             }
             if rank > 0 {
                 idx += 1;
-                c = fen[idx]
+                c = fen[idx];
             }
         }
         idx += 1;
@@ -214,27 +217,27 @@ impl Board {
         };
         idx += 2;
         c = fen[idx];
-        b.castle = 0;
+        b.castle = (false, false, false, false);
         if c == b'-' {
             idx += 1;
         } else {
             if c == b'K' {
-                b.castle |= 1;
+                b.castle.0 = true;
                 idx += 1;
-                c = fen[idx]
+                c = fen[idx];
             }
             if c == b'Q' {
-                b.castle |= 2;
+                b.castle.1 = true;
                 idx += 1;
-                c = fen[idx]
+                c = fen[idx];
             }
             if c == b'k' {
-                b.castle |= 4;
+                b.castle.2 = true;
                 idx += 1;
-                c = fen[idx]
+                c = fen[idx];
             }
             if c == b'q' {
-                b.castle |= 8;
+                b.castle.3 = true;
                 idx += 1;
             }
         }
@@ -256,6 +259,9 @@ impl Board {
     }
 
     /// Make a move on the board.
+    ///
+    /// # Panics
+    /// Panics when Lofty hasn't implemented necessary code.
     #[inline]
     #[must_use]
     pub fn make(&self, m: Move) -> Self {
@@ -264,11 +270,11 @@ impl Board {
             MoveType::Normal => {
                 b.data.move_piece(m.from, m.dest, true, true);
                 b.ep = None;
-            }
+            },
             MoveType::DoublePush => {
                 b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = m.from.relative_north(b.side);
-            }
+            },
             MoveType::Capture => {
                 let piece_index = b
                     .data
@@ -277,17 +283,74 @@ impl Board {
                 b.data.remove_piece(piece_index, true);
                 b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = None;
-            }
-            MoveType::Castle => todo!("make castling moves"),
+            },
+            MoveType::Castle => {
+                if m.dest > m.from {
+                    let rook_from = m.dest.east().unwrap();
+                    let rook_to = m.dest.west().unwrap();
+                    b.data.move_piece(rook_from, rook_to, true, true);
+                } else {
+                    let rook_from = m.dest.west().unwrap().west().unwrap();
+                    let rook_to = m.dest.east().unwrap();
+                    b.data.move_piece(rook_from, rook_to, true, true);
+                }
+                b.data.move_piece(m.from, m.dest, true, true);
+                b.ep = None;
+            },
             MoveType::EnPassant => {
                 let target_square = b.ep.unwrap().relative_south(b.side).unwrap();
                 let target_piece = b.data.piece_index(target_square).unwrap();
                 b.data.remove_piece(target_piece, true);
                 b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = None;
-            }
-            MoveType::Promotion => todo!("make promotion moves"),
-            MoveType::CapturePromotion => todo!("make capture-promotion moves"),
+            },
+            MoveType::Promotion => {
+                let piece_index = b.data.piece_index(m.from).unwrap();
+                b.data.remove_piece(piece_index, true);
+                b.data.add_piece(m.prom.unwrap(), b.side, m.dest, true);
+                b.ep = None;
+            },
+            MoveType::CapturePromotion => {
+                let source_piece = b.data.piece_index(m.from).unwrap();
+                let target_piece = b.data.piece_index(m.dest).unwrap();
+                b.data.remove_piece(source_piece, true);
+                b.data.remove_piece(target_piece, true);
+                b.data.add_piece(m.prom.unwrap(), b.side, m.dest, true);
+                b.ep = None;
+            },
+        }
+
+        let a1 = Square::from_rank_file(Rank::One, File::A);
+        let a8 = Square::from_rank_file(Rank::Eight, File::A);
+        let e1 = Square::from_rank_file(Rank::One, File::E);
+        let e8 = Square::from_rank_file(Rank::Eight, File::E);
+        let h1 = Square::from_rank_file(Rank::One, File::H);
+        let h8 = Square::from_rank_file(Rank::Eight, File::H);
+
+        if m.from == e1 {
+            b.castle.0 = false;
+            b.castle.1 = false;
+        }
+
+        if m.from == e8 {
+            b.castle.2 = false;
+            b.castle.3 = false;
+        }
+
+        if m.from == h1 || m.dest == h1 {
+            b.castle.0 = false;
+        }
+
+        if m.from == a1 || m.dest == a1 {
+            b.castle.1 = false;
+        }
+
+        if m.from == h8 || m.dest == h8 {
+            b.castle.2 = false;
+        }
+
+        if m.from == a8 || m.dest == a8 {
+            b.castle.3 = false;
         }
 
         b.side = !b.side;
@@ -303,6 +366,7 @@ impl Board {
             .peek()
             .unwrap();
         let king_square = self.data.square_of_piece(king_index);
+        let in_check = !self.data.attacks_to(king_square, !self.side).empty();
         let king_square_16x8 = Square16x8::from_square(king_square);
 
         for possible_pinner in self.data.pieces_of_colour(!self.side).and(sliders) {
@@ -350,6 +414,9 @@ impl Board {
             let blocker_square = self.data.square_of_piece(blocker);
 
             let mut generate_ray = || {
+                if in_check {
+                    return;
+                }
                 for square in king_square_16x8.ray_attacks(pinner_king_dir.opposite()) {
                     if square == pinner_square {
                         v.push(Move::new(blocker_square, square, MoveType::Capture, None));
@@ -500,8 +567,7 @@ impl Board {
 
     /// Generate king-specific moves.
     fn generate_king(&self, v: &mut ArrayVec<[Move; 256]>) {
-        if let Some(piece_index) = (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek()
-        {
+        if let Some(piece_index) = (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek() {
             let square = self.data.square_of_piece(piece_index);
 
             // King moves.
@@ -525,7 +591,32 @@ impl Board {
             }
 
             // Kingside castling.
-            //if self.castle
+            if (self.side == Colour::White && self.castle.0) || (self.side == Colour::Black && self.castle.2) {
+                let east1 = square.east().unwrap();
+                let east2 = east1.east().unwrap();
+                if self.data.attacks_to(square, !self.side).empty() &&
+                    !self.data.has_piece(east1) &&
+                    self.data.attacks_to(east1, !self.side).empty() &&
+                    !self.data.has_piece(east2) &&
+                    self.data.attacks_to(east2, !self.side).empty() {
+                        v.push(Move::new(square, east2, MoveType::Castle, None));  
+                } 
+            }
+
+            // Queenside castling.
+            if (self.side == Colour::White && self.castle.1) || (self.side == Colour::Black && self.castle.3) {
+                let west1 = square.west().unwrap();
+                let west2 = west1.west().unwrap();
+                let west3 = west2.west().unwrap();
+                if self.data.attacks_to(square, !self.side).empty() &&
+                    !self.data.has_piece(west1) &&
+                    self.data.attacks_to(west1, !self.side).empty() &&
+                    !self.data.has_piece(west2) &&
+                    self.data.attacks_to(west2, !self.side).empty() &&
+                    !self.data.has_piece(west3) {
+                        v.push(Move::new(square, west2, MoveType::Castle, None));  
+                }
+            }
         }
     }
 
@@ -542,6 +633,8 @@ impl Board {
         let attacker_piece = self.data.piece_from_bit(attacker_index);
         let attacker_square = self.data.square_of_piece(attacker_index);
         let attacker_direction = attacker_square.direction(king_square);
+
+        let pinned = self.generate_pinned_pieces(v);
 
         let add_pawn_block = |v: &mut ArrayVec<[Move; 256]>, from, dest, kind| {
             if let Some(colour) = self.data.colour_from_square(from) {
@@ -572,7 +665,7 @@ impl Board {
         };
 
         // Can we capture the attacker?
-        for capturer in self.data.attacks_to(attacker_square, self.side) {
+        for capturer in self.data.attacks_to(attacker_square, self.side) & !pinned {
             let from = self.data.square_of_piece(capturer);
             if self.data.piece_from_bit(capturer) == Piece::King
                 && !self.data.attacks_to(attacker_square, !self.side).empty()
@@ -611,10 +704,16 @@ impl Board {
 
         // Can we move the king?
         for square in king_square.king_attacks() {
-            if self.data.has_piece(square) {
-                // Own-piece captures are illegal, opposite-piece captures are handled elsewhere.
-                continue;
-            }
+            let kind = if self.data.has_piece(square) {
+                if square == attacker_square || self.data.colour_from_square(square) == Some(self.side) {
+                    // Own-piece captures are illegal, captures of the attacker are handled elsewhere.
+                    continue;
+                }
+                MoveType::Capture
+            } else {
+                MoveType::Normal
+            };
+
             if !self.data.attacks_to(square, !self.side).empty() {
                 // Moving into check is illegal.
                 continue;
@@ -630,7 +729,7 @@ impl Board {
                 }
             }
 
-            v.push(Move::new(king_square, square, MoveType::Normal, None));
+            v.push(Move::new(king_square, square, kind, None));
         }
     }
 
@@ -695,10 +794,10 @@ impl Board {
     }
 }
 
-/*impl Drop for Board {
+impl Drop for Board {
     fn drop(&mut self) {
         if ::std::thread::panicking() {
             println!("{}", self);
         }
     }
-}*/
+}
