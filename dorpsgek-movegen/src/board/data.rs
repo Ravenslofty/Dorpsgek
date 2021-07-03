@@ -21,7 +21,11 @@ use super::{
     piecelist::Piecelist,
     piecemask::Piecemask,
 };
-use crate::{colour::Colour, piece::Piece, square::{Direction, Square, Square16x8}};
+use crate::{
+    colour::Colour,
+    piece::Piece,
+    square::{Direction, Square, Square16x8},
+};
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
@@ -180,7 +184,11 @@ impl BoardData {
             self.update_sliders(to_square, false);
         }
 
-        debug_assert!(!self.bitlist[to_square].contains(piece_index.into()), "piece on {} cannot attack itself", to_square);
+        debug_assert!(
+            !self.bitlist[to_square].contains(piece_index.into()),
+            "piece on {} cannot attack itself",
+            to_square
+        );
     }
 
     /// Rebuild the attack set for the board.
@@ -243,7 +251,12 @@ impl BoardData {
             }
         };
 
-        debug_assert!(!self.bitlist[square].contains(bit.into()), "{:?} on {} cannot attack itself", self.piece_from_square(square), square);
+        debug_assert!(
+            !self.bitlist[square].contains(bit.into()),
+            "{:?} on {} cannot attack itself",
+            self.piece_from_square(square),
+            square
+        );
 
         match piece {
             Piece::Pawn => square
@@ -286,7 +299,12 @@ impl BoardData {
             }
         }
 
-        debug_assert!(!self.bitlist[square].contains(bit.into()), "{:?} on {} cannot attack itself", self.piece_from_square(square), square);
+        debug_assert!(
+            !self.bitlist[square].contains(bit.into()),
+            "{:?} on {} cannot attack itself",
+            self.piece_from_square(square),
+            square
+        );
     }
 
     /// Extend or remove slider attacks to a square.
@@ -312,7 +330,13 @@ impl BoardData {
             } else {
                 let attacker = attacker.to_square().unwrap();
                 let square = square.to_square().unwrap();
-                panic!("no direction between {:?} {} and {:?} {}", self.piece_from_square(attacker), attacker, self.piece_from_square(square), square);
+                panic!(
+                    "no direction between {:?} {} and {:?} {}",
+                    self.piece_from_square(attacker),
+                    attacker,
+                    self.piece_from_square(square),
+                    square
+                );
             }
         }
     }

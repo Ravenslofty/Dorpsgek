@@ -8,9 +8,6 @@ members = [
 
 [profile.release]
 opt-level = 3
-lto = "fat"
+# lto = "fat"
 # codegen-units = 1
 debug = true
-
-[build]
-rustflags = ["-C", "link-arg=-fuse-ld=lld", "-C", "target-cpu=native"]

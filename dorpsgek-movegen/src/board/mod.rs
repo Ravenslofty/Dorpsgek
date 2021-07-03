@@ -15,7 +15,12 @@
  *   along with Dorpsgek.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::{chessmove::{Move, MoveType}, colour::Colour, piece::Piece, square::{Direction, File, Rank, Square, Square16x8}};
+use crate::{
+    chessmove::{Move, MoveType},
+    colour::Colour,
+    piece::Piece,
+    square::{Direction, File, Rank, Square, Square16x8},
+};
 use std::{
     convert::{TryFrom, TryInto},
     ffi::CString,
@@ -270,11 +275,11 @@ impl Board {
             MoveType::Normal => {
                 b.data.move_piece(m.from, m.dest, true, true);
                 b.ep = None;
-            },
+            }
             MoveType::DoublePush => {
                 b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = m.from.relative_north(b.side);
-            },
+            }
             MoveType::Capture => {
                 let piece_index = b
                     .data
@@ -283,7 +288,7 @@ impl Board {
                 b.data.remove_piece(piece_index, true);
                 b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = None;
-            },
+            }
             MoveType::Castle => {
                 if m.dest > m.from {
                     let rook_from = m.dest.east().unwrap();
@@ -296,20 +301,20 @@ impl Board {
                 }
                 b.data.move_piece(m.from, m.dest, true, true);
                 b.ep = None;
-            },
+            }
             MoveType::EnPassant => {
                 let target_square = b.ep.unwrap().relative_south(b.side).unwrap();
                 let target_piece = b.data.piece_index(target_square).unwrap();
                 b.data.remove_piece(target_piece, true);
                 b.data.move_piece(m.from, m.dest, true, false);
                 b.ep = None;
-            },
+            }
             MoveType::Promotion => {
                 let piece_index = b.data.piece_index(m.from).unwrap();
                 b.data.remove_piece(piece_index, true);
                 b.data.add_piece(m.prom.unwrap(), b.side, m.dest, true);
                 b.ep = None;
-            },
+            }
             MoveType::CapturePromotion => {
                 let source_piece = b.data.piece_index(m.from).unwrap();
                 let target_piece = b.data.piece_index(m.dest).unwrap();
@@ -317,7 +322,7 @@ impl Board {
                 b.data.remove_piece(target_piece, true);
                 b.data.add_piece(m.prom.unwrap(), b.side, m.dest, true);
                 b.ep = None;
-            },
+            }
         }
 
         let a1 = Square::from_rank_file(Rank::One, File::A);
@@ -396,10 +401,10 @@ impl Board {
                                 friendly_blocker = None;
                                 enemy_blocker = None;
                                 break;
-                            },
+                            }
                             None => {
                                 enemy_blocker = Some(piece_index);
-                            },
+                            }
                         }
                     } else {
                         match friendly_blocker {
@@ -407,7 +412,7 @@ impl Board {
                                 friendly_blocker = None;
                                 enemy_blocker = None;
                                 break;
-                            },
+                            }
                             None => {
                                 friendly_blocker = Some(piece_index);
                             }
@@ -438,7 +443,13 @@ impl Board {
                     // This piece is pinned.
                     if !in_check {
                         match self.data.piece_from_bit(blocker) {
-                            Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir), false, false),
+                            Piece::Pawn => self.generate_pawn(
+                                v,
+                                blocker_square,
+                                Some(pinner_king_dir),
+                                false,
+                                false,
+                            ),
                             Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
                             Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
                             Piece::Queen => generate_ray(),
@@ -447,16 +458,17 @@ impl Board {
                     }
 
                     pinned |= Bitlist::from(blocker);
-                },
+                }
                 // There is one enemy blocker: consider it pinned (for our purposes).
                 (None, Some(blocker)) => {
                     pinned |= Bitlist::from(blocker);
-                },
+                }
                 // There is one friendly blocker and one enemy blocker: it *may* be pinned for en-passant purposes
                 (Some(friendly_blocker), Some(enemy_blocker)) => {
                     // If at least one of the blockers is a piece, we don't need to worry about en-passant.
-                    if self.data.piece_from_bit(friendly_blocker) != Piece::Pawn ||
-                        self.data.piece_from_bit(enemy_blocker) != Piece::Pawn {
+                    if self.data.piece_from_bit(friendly_blocker) != Piece::Pawn
+                        || self.data.piece_from_bit(enemy_blocker) != Piece::Pawn
+                    {
                         continue;
                     }
 
@@ -468,7 +480,13 @@ impl Board {
                     // Alas, we do have to care.
                     pinned |= Bitlist::from(friendly_blocker) | Bitlist::from(enemy_blocker);
 
-                    self.generate_pawn(v, self.data.square_of_piece(friendly_blocker), None, true, in_check);
+                    self.generate_pawn(
+                        v,
+                        self.data.square_of_piece(friendly_blocker),
+                        None,
+                        true,
+                        in_check,
+                    );
                 }
             }
         }
@@ -477,7 +495,14 @@ impl Board {
     }
 
     /// Generate pawn-specific moves.
-    fn generate_pawn(&self, v: &mut ArrayVec<[Move; 256]>, from: Square, dir: Option<Direction>, no_ep: bool, capture_only: bool) {
+    fn generate_pawn(
+        &self,
+        v: &mut ArrayVec<[Move; 256]>,
+        from: Square,
+        dir: Option<Direction>,
+        no_ep: bool,
+        capture_only: bool,
+    ) {
         let push = |v: &mut ArrayVec<[Move; 256]>,
                     from: Square,
                     dest: Square,
@@ -491,7 +516,12 @@ impl Board {
                     }
                 }
             }
-            if capture_only && !matches!(kind, MoveType::Capture | MoveType::CapturePromotion | MoveType::EnPassant) {
+            if capture_only
+                && !matches!(
+                    kind,
+                    MoveType::Capture | MoveType::CapturePromotion | MoveType::EnPassant
+                )
+            {
                 return;
             }
             v.push(Move::new(from, dest, kind, prom));
@@ -603,7 +633,8 @@ impl Board {
 
     /// Generate king-specific moves.
     fn generate_king(&self, v: &mut ArrayVec<[Move; 256]>) {
-        if let Some(piece_index) = (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek() {
+        if let Some(piece_index) = (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek()
+        {
             let square = self.data.square_of_piece(piece_index);
 
             // King moves.
@@ -627,30 +658,36 @@ impl Board {
             }
 
             // Kingside castling.
-            if (self.side == Colour::White && self.castle.0) || (self.side == Colour::Black && self.castle.2) {
+            if (self.side == Colour::White && self.castle.0)
+                || (self.side == Colour::Black && self.castle.2)
+            {
                 let east1 = square.east().unwrap();
                 let east2 = east1.east().unwrap();
-                if self.data.attacks_to(square, !self.side).empty() &&
-                    !self.data.has_piece(east1) &&
-                    self.data.attacks_to(east1, !self.side).empty() &&
-                    !self.data.has_piece(east2) &&
-                    self.data.attacks_to(east2, !self.side).empty() {
-                        v.push(Move::new(square, east2, MoveType::Castle, None));
+                if self.data.attacks_to(square, !self.side).empty()
+                    && !self.data.has_piece(east1)
+                    && self.data.attacks_to(east1, !self.side).empty()
+                    && !self.data.has_piece(east2)
+                    && self.data.attacks_to(east2, !self.side).empty()
+                {
+                    v.push(Move::new(square, east2, MoveType::Castle, None));
                 }
             }
 
             // Queenside castling.
-            if (self.side == Colour::White && self.castle.1) || (self.side == Colour::Black && self.castle.3) {
+            if (self.side == Colour::White && self.castle.1)
+                || (self.side == Colour::Black && self.castle.3)
+            {
                 let west1 = square.west().unwrap();
                 let west2 = west1.west().unwrap();
                 let west3 = west2.west().unwrap();
-                if self.data.attacks_to(square, !self.side).empty() &&
-                    !self.data.has_piece(west1) &&
-                    self.data.attacks_to(west1, !self.side).empty() &&
-                    !self.data.has_piece(west2) &&
-                    self.data.attacks_to(west2, !self.side).empty() &&
-                    !self.data.has_piece(west3) {
-                        v.push(Move::new(square, west2, MoveType::Castle, None));
+                if self.data.attacks_to(square, !self.side).empty()
+                    && !self.data.has_piece(west1)
+                    && self.data.attacks_to(west1, !self.side).empty()
+                    && !self.data.has_piece(west2)
+                    && self.data.attacks_to(west2, !self.side).empty()
+                    && !self.data.has_piece(west3)
+                {
+                    v.push(Move::new(square, west2, MoveType::Castle, None));
                 }
             }
         }
@@ -683,9 +720,7 @@ impl Board {
         let add_pawn_blocks = |v: &mut ArrayVec<[Move; 256]>, dest: Square| {
             if let Some(from) = dest.relative_south(self.side) {
                 match self.data.piece_from_square(from) {
-                    Some(Piece::Pawn) => {
-                        add_pawn_block(v, from, dest, MoveType::Normal);
-                    }
+                    Some(Piece::Pawn) => add_pawn_block(v, from, dest, MoveType::Normal),
                     Some(_) => {}
                     None => {
                         if Rank::from(dest).is_relative_fourth(self.side) {
@@ -708,50 +743,83 @@ impl Board {
             {
                 continue;
             }
-            v.push(Move::new(from, attacker_square, MoveType::Capture, None));
+            if self.data.piece_from_bit(capturer) == Piece::Pawn
+                && Rank::from(attacker_square).is_relative_eighth(self.side)
+            {
+                v.push(Move::new(
+                    from,
+                    attacker_square,
+                    MoveType::CapturePromotion,
+                    Some(Piece::Queen),
+                ));
+                v.push(Move::new(
+                    from,
+                    attacker_square,
+                    MoveType::CapturePromotion,
+                    Some(Piece::Rook),
+                ));
+                v.push(Move::new(
+                    from,
+                    attacker_square,
+                    MoveType::CapturePromotion,
+                    Some(Piece::Bishop),
+                ));
+                v.push(Move::new(
+                    from,
+                    attacker_square,
+                    MoveType::CapturePromotion,
+                    Some(Piece::Knight),
+                ));
+            } else {
+                v.push(Move::new(from, attacker_square, MoveType::Capture, None));
+            }
         }
 
         if let Some(ep) = self.ep {
             if let Some(ep_south) = ep.relative_south(self.side) {
                 if ep_south == attacker_square && attacker_piece == Piece::Pawn {
-                    for capturer in self.data.attacks_to(ep, self.side) & self.data.pawns() {
-                        v.push(Move::new(self.data.square_of_piece(capturer), ep, MoveType::EnPassant, None));
+                    for capturer in self.data.attacks_to(ep, self.side) & self.data.pawns() & !pinned {
+                        v.push(Move::new(
+                            self.data.square_of_piece(capturer),
+                            ep,
+                            MoveType::EnPassant,
+                            None,
+                        ));
                     }
                 }
             }
         }
 
         // Can we block the check?
-        match attacker_piece {
-            Piece::Bishop | Piece::Rook | Piece::Queen => {
-                let direction = king_square.direction(attacker_square).unwrap();
-                for dest in king_square_16x8.ray_attacks(direction) {
-                    if dest == attacker_square {
-                        break;
-                    }
-
-                    // Piece moves.
-                    for attacker in self
-                        .data
-                        .attacks_to(dest, self.side)
-                        .and(!self.data.pawns())
-                        .and(!self.data.kings())
-                    {
-                        let from = self.data.square_of_piece(attacker);
-                        v.push(Move::new(from, dest, MoveType::Normal, None));
-                    }
-
-                    // Pawn moves.
-                    add_pawn_blocks(v, dest);
+        if let Piece::Bishop | Piece::Rook | Piece::Queen = attacker_piece {
+            let direction = king_square.direction(attacker_square).unwrap();
+            for dest in king_square_16x8.ray_attacks(direction) {
+                if dest == attacker_square {
+                    break;
                 }
+
+                // Piece moves.
+                for attacker in self
+                    .data
+                    .attacks_to(dest, self.side)
+                    .and(!self.data.pawns())
+                    .and(!self.data.kings())
+                {
+                    let from = self.data.square_of_piece(attacker);
+                    v.push(Move::new(from, dest, MoveType::Normal, None));
+                }
+
+                // Pawn moves.
+                add_pawn_blocks(v, dest);
             }
-            _ => {}
         }
 
         // Can we move the king?
         for square in king_square.king_attacks() {
             let kind = if self.data.has_piece(square) {
-                if square == attacker_square || self.data.colour_from_square(square) == Some(self.side) {
+                if square == attacker_square
+                    || self.data.colour_from_square(square) == Some(self.side)
+                {
                     // Own-piece captures are illegal, captures of the attacker are handled elsewhere.
                     continue;
                 }
@@ -795,7 +863,9 @@ impl Board {
         // Can we move the king?
         for square in king_square.king_attacks() {
             let kind = if self.data.has_piece(square) {
-                if square == attacker_square || self.data.colour_from_square(square) == Some(self.side) {
+                if square == attacker_square
+                    || self.data.colour_from_square(square) == Some(self.side)
+                {
                     // Own-piece captures are illegal, captures of the attacker are handled elsewhere.
                     continue;
                 }

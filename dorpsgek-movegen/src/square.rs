@@ -471,7 +471,7 @@ impl From<Square> for Square16x8 {
 }
 
 impl Square16x8 {
-    pub fn from_square(square: Square) -> Self {
+    pub const fn from_square(square: Square) -> Self {
         let square = square.into_inner();
         let square = square + (square & !7);
         Self(square)
@@ -787,7 +787,7 @@ impl Direction {
     /// Returns the 16x8 square difference of this Direction.
     pub const fn to_16x8(self) -> i16 {
         const VECTORS: [i16; 16] = [
-            16, 33, 17, 18, 1, -14, -15, -31, -16, -33, -17, -18, -1, 14, 15, 31
+            16, 33, 17, 18, 1, -14, -15, -31, -16, -33, -17, -18, -1, 14, 15, 31,
         ];
         VECTORS[self as usize]
     }
@@ -831,7 +831,10 @@ impl Iterator for KnightIter {
     type Item = Square;
 
     fn next(&mut self) -> Option<Self::Item> {
-        use Direction::{EastNorthEast, EastSouthEast, NorthNorthEast, NorthNorthWest, SouthSouthEast, SouthSouthWest, WestNorthWest, WestSouthWest};
+        use Direction::{
+            EastNorthEast, EastSouthEast, NorthNorthEast, NorthNorthWest, SouthSouthEast,
+            SouthSouthWest, WestNorthWest, WestSouthWest,
+        };
         const KNIGHT_DIR: [Direction; 8] = [
             NorthNorthEast,
             EastNorthEast,

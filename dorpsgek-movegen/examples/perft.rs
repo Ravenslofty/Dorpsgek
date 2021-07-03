@@ -42,7 +42,7 @@ pub fn divide(board: &Board, depth: u32) -> u64 {
 }
 
 fn main() {
-    let startpos = Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
+    let startpos = Board::from_fen("8/2p5/3p4/KP3k1r/5p2/8/4P1P1/5R2 w - - 4 3").unwrap();
 
     let depth = 2;
     let nodes = divide(&startpos, depth);
