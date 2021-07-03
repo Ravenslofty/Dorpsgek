@@ -780,8 +780,47 @@ impl Board {
     }
 
     #[allow(clippy::unused_self)]
-    fn generate_double_check(&self, _v: &mut ArrayVec<[Move; 256]>) {
-        todo!("double check move generation");
+    fn generate_double_check(&self, v: &mut ArrayVec<[Move; 256]>) {
+        #[allow(clippy::unwrap_used)]
+        let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
+            .peek()
+            .unwrap();
+        let king_square = self.data.square_of_piece(king_index);
+        let attacker_bit = self.data.attacks_to(king_square, !self.side);
+        let attacker_index = attacker_bit.peek().unwrap();
+        let attacker_piece = self.data.piece_from_bit(attacker_index);
+        let attacker_square = self.data.square_of_piece(attacker_index);
+        let attacker_direction = attacker_square.direction(king_square);
+
+        // Can we move the king?
+        for square in king_square.king_attacks() {
+            let kind = if self.data.has_piece(square) {
+                if square == attacker_square || self.data.colour_from_square(square) == Some(self.side) {
+                    // Own-piece captures are illegal, captures of the attacker are handled elsewhere.
+                    continue;
+                }
+                MoveType::Capture
+            } else {
+                MoveType::Normal
+            };
+
+            if !self.data.attacks_to(square, !self.side).empty() {
+                // Moving into check is illegal.
+                continue;
+            }
+            if let Some(dir) = attacker_direction {
+                // Slider attacks x-ray through the king to attack that square.
+                if let Some(xray_square) = king_square.travel(dir) {
+                    if matches!(attacker_piece, Piece::Bishop | Piece::Rook | Piece::Queen)
+                        && xray_square == square
+                    {
+                        continue;
+                    }
+                }
+            }
+
+            v.push(Move::new(king_square, square, kind, None));
+        }
     }
 
     /// Generate a vector of moves on the board.

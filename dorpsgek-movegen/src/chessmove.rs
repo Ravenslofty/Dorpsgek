@@ -41,9 +41,9 @@ impl Display for Move {
             from_file as char, from_rank as char, dest_file as char, dest_rank as char
         )?;
 
-        if self.prom.is_some() {
+        if let Some(prom) = self.prom {
             static PROMOTE_CHAR: [char; 6] = ['p', 'n', 'b', 'r', 'q', 'k'];
-            write!(f, "{}", PROMOTE_CHAR[self.kind as usize])?;
+            write!(f, "{}", PROMOTE_CHAR[prom as usize])?;
         }
 
         Ok(())
