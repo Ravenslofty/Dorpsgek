@@ -438,7 +438,7 @@ impl Board {
                     // This piece is pinned.
                     if !in_check {
                         match self.data.piece_from_bit(blocker) {
-                            Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir), false),
+                            Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir), false, false),
                             Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
                             Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
                             Piece::Queen => generate_ray(),
@@ -468,7 +468,7 @@ impl Board {
                     // Alas, we do have to care.
                     pinned |= Bitlist::from(friendly_blocker) | Bitlist::from(enemy_blocker);
 
-                    self.generate_pawn(v, self.data.square_of_piece(friendly_blocker), None, true);
+                    self.generate_pawn(v, self.data.square_of_piece(friendly_blocker), None, true, in_check);
                 }
             }
         }
@@ -477,7 +477,7 @@ impl Board {
     }
 
     /// Generate pawn-specific moves.
-    fn generate_pawn(&self, v: &mut ArrayVec<[Move; 256]>, from: Square, dir: Option<Direction>, no_ep: bool) {
+    fn generate_pawn(&self, v: &mut ArrayVec<[Move; 256]>, from: Square, dir: Option<Direction>, no_ep: bool, capture_only: bool) {
         let push = |v: &mut ArrayVec<[Move; 256]>,
                     from: Square,
                     dest: Square,
@@ -490,6 +490,9 @@ impl Board {
                         return;
                     }
                 }
+            }
+            if capture_only && !matches!(kind, MoveType::Capture | MoveType::CapturePromotion | MoveType::EnPassant) {
+                return;
             }
             v.push(Move::new(from, dest, kind, prom));
         };
@@ -594,7 +597,7 @@ impl Board {
             .and(!pinned)
         {
             let from = self.data.square_of_piece(pawn);
-            self.generate_pawn(v, from, None, false);
+            self.generate_pawn(v, from, None, false, false);
         }
     }
 

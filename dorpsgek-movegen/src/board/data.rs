@@ -15,8 +15,6 @@
  *   along with Dorpsgek.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use std::hint::unreachable_unchecked;
-
 use super::{
     bitlist::{Bitlist, BitlistArray},
     index::{PieceIndex, PieceIndexArray},
