@@ -382,7 +382,8 @@ impl Board {
                 continue;
             }
 
-            let mut blocker = None;
+            let mut friendly_blocker = None;
+            let mut enemy_blocker = None;
             for square in pinner_square_16x8.ray_attacks(pinner_king_dir) {
                 if square == king_square {
                     break;
@@ -390,60 +391,93 @@ impl Board {
 
                 if let Some(piece_index) = self.data.piece_index(square) {
                     if self.data.colour_from_square(square) == Some(!self.side) {
-                        blocker = None;
-                        break;
-                    }
-
-                    match blocker {
-                        Some(_) => {
-                            blocker = None;
-                            break;
+                        match enemy_blocker {
+                            Some(_) => {
+                                friendly_blocker = None;
+                                enemy_blocker = None;
+                                break;
+                            },
+                            None => {
+                                enemy_blocker = Some(piece_index);
+                            },
                         }
-                        None => {
-                            blocker = Some(piece_index);
+                    } else {
+                        match friendly_blocker {
+                            Some(_) => {
+                                friendly_blocker = None;
+                                enemy_blocker = None;
+                                break;
+                            },
+                            None => {
+                                friendly_blocker = Some(piece_index);
+                            }
                         }
                     }
                 }
             }
 
-            if blocker.is_none() {
-                continue;
-            }
+            match (friendly_blocker, enemy_blocker) {
+                // This is a direct check, or one side has multiple blockers: skip.
+                (None, None) => continue,
+                // There is one friendly blocker: it is pinned.
+                (Some(blocker), None) => {
+                    let blocker_square = self.data.square_of_piece(blocker);
 
-            let blocker = blocker.unwrap();
-            let blocker_square = self.data.square_of_piece(blocker);
+                    let mut generate_ray = || {
+                        for square in king_square_16x8.ray_attacks(pinner_king_dir.opposite()) {
+                            if square == pinner_square {
+                                v.push(Move::new(blocker_square, square, MoveType::Capture, None));
+                                break;
+                            }
+                            if square != blocker_square {
+                                v.push(Move::new(blocker_square, square, MoveType::Normal, None));
+                            }
+                        }
+                    };
 
-            let mut generate_ray = || {
-                for square in king_square_16x8.ray_attacks(pinner_king_dir.opposite()) {
-                    if square == pinner_square {
-                        v.push(Move::new(blocker_square, square, MoveType::Capture, None));
-                        break;
+                    // This piece is pinned.
+                    if !in_check {
+                        match self.data.piece_from_bit(blocker) {
+                            Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir), false),
+                            Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
+                            Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
+                            Piece::Queen => generate_ray(),
+                            _ => {}
+                        }
                     }
-                    if square != blocker_square {
-                        v.push(Move::new(blocker_square, square, MoveType::Normal, None));
-                    }
-                }
-            };
 
-            // This piece is pinned.
-            if !in_check {
-                match self.data.piece_from_bit(blocker) {
-                    Piece::Pawn => self.generate_pawn(v, blocker_square, Some(pinner_king_dir)),
-                    Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
-                    Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
-                    Piece::Queen => generate_ray(),
-                    _ => {}
+                    pinned |= Bitlist::from(blocker);
+                },
+                // There is one enemy blocker: consider it pinned (for our purposes).
+                (None, Some(blocker)) => {
+                    pinned |= Bitlist::from(blocker);
+                },
+                // There is one friendly blocker and one enemy blocker: it *may* be pinned for en-passant purposes
+                (Some(friendly_blocker), Some(enemy_blocker)) => {
+                    // If at least one of the blockers is a piece, we don't need to worry about en-passant.
+                    if self.data.piece_from_bit(friendly_blocker) != Piece::Pawn ||
+                        self.data.piece_from_bit(enemy_blocker) != Piece::Pawn {
+                        continue;
+                    }
+
+                    // Depending on direction we might also not need to care about en-passant.
+                    if pinner_king_dir != Direction::East && pinner_king_dir != Direction::West {
+                        continue;
+                    }
+
+                    // Alas, we do have to care.
+                    pinned |= Bitlist::from(friendly_blocker) | Bitlist::from(enemy_blocker);
+
+                    self.generate_pawn(v, self.data.square_of_piece(friendly_blocker), None, true);
                 }
             }
-
-            pinned |= Bitlist::from(blocker);
         }
 
         pinned
     }
 
     /// Generate pawn-specific moves.
-    fn generate_pawn(&self, v: &mut ArrayVec<[Move; 256]>, from: Square, dir: Option<Direction>) {
+    fn generate_pawn(&self, v: &mut ArrayVec<[Move; 256]>, from: Square, dir: Option<Direction>, no_ep: bool) {
         let push = |v: &mut ArrayVec<[Move; 256]>,
                     from: Square,
                     dest: Square,
@@ -530,7 +564,7 @@ impl Board {
                 if let Some(ep) = self.ep {
                     if let Some(possible_pawn) = ep.relative_south(self.side) {
                         if let Some(Piece::Pawn) = self.data.piece_from_square(possible_pawn) {
-                            if ep == dest {
+                            if ep == dest && !no_ep {
                                 push(v, from, dest, MoveType::EnPassant, None, dir);
                             }
                         }
@@ -560,7 +594,7 @@ impl Board {
             .and(!pinned)
         {
             let from = self.data.square_of_piece(pawn);
-            self.generate_pawn(v, from, None);
+            self.generate_pawn(v, from, None, false);
         }
     }
 
@@ -598,8 +632,8 @@ impl Board {
                     self.data.attacks_to(east1, !self.side).empty() &&
                     !self.data.has_piece(east2) &&
                     self.data.attacks_to(east2, !self.side).empty() {
-                        v.push(Move::new(square, east2, MoveType::Castle, None));  
-                } 
+                        v.push(Move::new(square, east2, MoveType::Castle, None));
+                }
             }
 
             // Queenside castling.
@@ -613,7 +647,7 @@ impl Board {
                     !self.data.has_piece(west2) &&
                     self.data.attacks_to(west2, !self.side).empty() &&
                     !self.data.has_piece(west3) {
-                        v.push(Move::new(square, west2, MoveType::Castle, None));  
+                        v.push(Move::new(square, west2, MoveType::Castle, None));
                 }
             }
         }
