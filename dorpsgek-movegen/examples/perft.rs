@@ -42,9 +42,9 @@ pub fn divide(board: &Board, depth: u32) -> u64 {
 }
 
 fn main() {
-    let startpos = Board::from_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1").unwrap();
+    let startpos = Board::from_fen("8/K1p4r/3p4/1P6/1R3p1k/8/4P1P1/8 b - - 3 2").unwrap();
 
-    let depth = 4;
+    let depth = 2;
     let nodes = divide(&startpos, depth);
     println!("Perft {}: {}", depth, nodes);
 }

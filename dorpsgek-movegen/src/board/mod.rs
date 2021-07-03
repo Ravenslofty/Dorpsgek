@@ -711,6 +711,16 @@ impl Board {
             v.push(Move::new(from, attacker_square, MoveType::Capture, None));
         }
 
+        if let Some(ep) = self.ep {
+            if let Some(ep_south) = ep.relative_south(self.side) {
+                if ep_south == attacker_square && attacker_piece == Piece::Pawn {
+                    for capturer in self.data.attacks_to(ep, self.side) & self.data.pawns() {
+                        v.push(Move::new(self.data.square_of_piece(capturer), ep, MoveType::EnPassant, None));
+                    }
+                }
+            }
+        }
+
         // Can we block the check?
         match attacker_piece {
             Piece::Bishop | Piece::Rook | Piece::Queen => {
