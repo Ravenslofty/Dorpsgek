@@ -1,6 +1,6 @@
 use dorpsgek_movegen::{perft, Board, Move};
-use tinyvec::ArrayVec;
 use rayon::prelude::*;
+use tinyvec::ArrayVec;
 
 pub fn divide(board: &Board, depth: u32) -> u64 {
     if depth == 0 {
@@ -11,12 +11,15 @@ pub fn divide(board: &Board, depth: u32) -> u64 {
         moves.set_len(0);
         board.generate(&mut moves);
 
-        moves.par_iter().map(|m| {
-            let board = board.make(*m);
-            let nodes = perft(&board, depth - 1);
-            println!("{} {}", m, nodes);
-            nodes
-        }).sum()
+        moves
+            .par_iter()
+            .map(|m| {
+                let board = board.make(*m);
+                let nodes = perft(&board, depth - 1);
+                println!("{} {}", m, nodes);
+                nodes
+            })
+            .sum()
     }
 }
 

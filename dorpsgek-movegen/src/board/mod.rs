@@ -622,7 +622,12 @@ impl Board {
     }
 
     /// Generate pawn-specific moves.
-    fn generate_pawns(&self, v: &mut ArrayVec<[Move; 256]>, pinned: Bitlist, enpassant_pinned: Bitlist) {
+    fn generate_pawns(
+        &self,
+        v: &mut ArrayVec<[Move; 256]>,
+        pinned: Bitlist,
+        enpassant_pinned: Bitlist,
+    ) {
         for pawn in self
             .data
             .pawns()
@@ -716,7 +721,9 @@ impl Board {
 
         let add_pawn_block = |v: &mut ArrayVec<[Move; 256]>, from, dest, kind| {
             if let Some(colour) = self.data.colour_from_square(from) {
-                if colour == self.side && !pinned.contains(self.data.piece_index(from).unwrap().into()) {
+                if colour == self.side
+                    && !pinned.contains(self.data.piece_index(from).unwrap().into())
+                {
                     v.push(Move::new(from, dest, kind, None));
                 }
             }
@@ -741,7 +748,9 @@ impl Board {
         };
 
         // Can we capture the attacker?
-        for capturer in self.data.attacks_to(attacker_square, self.side) & !pinned & !enpassant_pinned {
+        for capturer in
+            self.data.attacks_to(attacker_square, self.side) & !pinned & !enpassant_pinned
+        {
             let from = self.data.square_of_piece(capturer);
             if self.data.piece_from_bit(capturer) == Piece::King
                 && !self.data.attacks_to(attacker_square, !self.side).empty()
@@ -783,7 +792,11 @@ impl Board {
         if let Some(ep) = self.ep {
             if let Some(ep_south) = ep.relative_south(self.side) {
                 if ep_south == attacker_square && attacker_piece == Piece::Pawn {
-                    for capturer in self.data.attacks_to(ep, self.side) & self.data.pawns() & !pinned & !enpassant_pinned {
+                    for capturer in self.data.attacks_to(ep, self.side)
+                        & self.data.pawns()
+                        & !pinned
+                        & !enpassant_pinned
+                    {
                         v.push(Move::new(
                             self.data.square_of_piece(capturer),
                             ep,
@@ -873,8 +886,7 @@ impl Board {
         // Can we move the king?
         for square in king_square.king_attacks() {
             let kind = if self.data.has_piece(square) {
-                if self.data.colour_from_square(square) == Some(self.side)
-                {
+                if self.data.colour_from_square(square) == Some(self.side) {
                     // Own-piece captures are illegal.
                     continue;
                 }
