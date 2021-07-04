@@ -28,8 +28,10 @@ mod colour;
 mod piece;
 mod square;
 
-pub use board::Board;
+pub use board::{Board, PieceIndex};
+pub use colour::Colour;
 pub use chessmove::{Move, MoveType};
+pub use piece::Piece;
 pub use square::Square;
 use tinyvec::ArrayVec;
 
@@ -71,9 +73,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 20);
         assert_eq!(perft(&startpos, 2), 400);
         assert_eq!(perft(&startpos, 3), 8902);
-        assert_eq!(perft(&startpos, 4), 197281);
-        assert_eq!(perft(&startpos, 5), 4865609);
-        assert_eq!(perft(&startpos, 6), 119060324);
+        assert_eq!(perft(&startpos, 4), 197_281);
+        assert_eq!(perft(&startpos, 5), 4_865_609);
+        assert_eq!(perft(&startpos, 6), 119_060_324);
     }
 
     #[test]
@@ -84,8 +86,8 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 48);
         assert_eq!(perft(&startpos, 2), 2039);
         assert_eq!(perft(&startpos, 3), 97862);
-        assert_eq!(perft(&startpos, 4), 4085603);
-        assert_eq!(perft(&startpos, 5), 193690690);
+        assert_eq!(perft(&startpos, 4), 4_085_603);
+        assert_eq!(perft(&startpos, 5), 193_690_690);
     }
 
     #[test]

@@ -78,6 +78,11 @@ impl BoardData {
         self.piecemask.pawns()
     }
 
+    /// Return a bitlist of all knights.
+    pub const fn knights(&self) -> Bitlist {
+        self.piecemask.knights()
+    }
+
     /// Return a bitlist of all bishops.
     pub const fn bishops(&self) -> Bitlist {
         self.piecemask.bishops()
@@ -96,6 +101,11 @@ impl BoardData {
     /// Return a bitlist of all kings.
     pub const fn kings(&self) -> Bitlist {
         self.piecemask.kings()
+    }
+
+    /// Return a bitlist of all pieces.
+    pub const fn pieces(&self) -> Bitlist {
+        self.piecemask.occupied()
     }
 
     /// Return a bitlist of all pieces of a given colour.

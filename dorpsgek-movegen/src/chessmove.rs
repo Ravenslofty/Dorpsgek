@@ -67,6 +67,11 @@ impl Move {
             prom: promotion_piece,
         }
     }
+
+    #[must_use]
+    pub const fn is_capture(&self) -> bool {
+        matches!(self.kind, MoveType::Capture | MoveType::CapturePromotion | MoveType::EnPassant)
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]

@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "dorpsgek-movegen",
+    "dorpsgek"
 ]
 
 # [profile.dev]

@@ -21,22 +21,19 @@ use crate::{
     piece::Piece,
     square::{Direction, File, Rank, Square, Square16x8},
 };
-use std::{
-    convert::{TryFrom, TryInto},
-    ffi::CString,
-    fmt::Display,
-};
+use std::{convert::{TryFrom, TryInto}, ffi::CString, fmt::Display};
 
 use tinyvec::ArrayVec;
-
-use bitlist::Bitlist;
-use data::BoardData;
 
 mod bitlist;
 mod data;
 mod index;
 mod piecelist;
 mod piecemask;
+
+use bitlist::Bitlist;
+use data::BoardData;
+pub use index::PieceIndex;
 
 /// A chess position.
 #[derive(Clone)]
@@ -132,6 +129,11 @@ impl Board {
             ep: None,
             data: BoardData::new(),
         }
+    }
+
+    #[must_use]
+    pub const fn side(&self) -> Colour {
+        self.side
     }
 
     /// Check if this board is illegal by seeing if the enemy king is attacked by friendly pieces.
@@ -945,19 +947,56 @@ impl Board {
 
         let (pinned, enpassant_pinned) = self.generate_pinned_pieces(v);
 
+        // Pawns.
+        self.generate_pawns(v, pinned, enpassant_pinned);
+
+        let mut find_attackers = |dest: Square| {
+            let attacks = self.data.attacks_to(dest, self.side);
+            for capturer in attacks & self.data.knights() & !pinned {
+                let from = self.data.square_of_piece(capturer);
+                v.push(Move::new(from, dest, MoveType::Capture, None));
+            }
+            for capturer in attacks & self.data.bishops() & !pinned {
+                let from = self.data.square_of_piece(capturer);
+                v.push(Move::new(from, dest, MoveType::Capture, None));
+            }
+            for capturer in attacks & self.data.rooks() & !pinned {
+                let from = self.data.square_of_piece(capturer);
+                v.push(Move::new(from, dest, MoveType::Capture, None));
+            }
+            for capturer in attacks & self.data.queens() & !pinned {
+                let from = self.data.square_of_piece(capturer);
+                v.push(Move::new(from, dest, MoveType::Capture, None));
+            }
+        };
+
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.queens() {
+            find_attackers(self.square_of_piece(victim));
+        }
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.rooks() {
+            find_attackers(self.square_of_piece(victim));
+        }
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.bishops() {
+            find_attackers(self.square_of_piece(victim));
+        }
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.knights() {
+            find_attackers(self.square_of_piece(victim));
+        }
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.pawns() {
+            find_attackers(self.square_of_piece(victim));
+        }
+
+        // King.
+        self.generate_king(v);
+
         // General attack loop; pawns and kings handled separately.
         for dest in 0_u8..64 {
             // Squares will always be in range, so this will never panic.
             let dest = unsafe { Square::from_u8_unchecked(dest) };
-            let mut kind = MoveType::Normal;
 
-            // Is this a capture?
-            if let Some(colour) = self.data.colour_from_square(dest) {
-                if colour == self.side {
-                    // Forbid own-colour captures.
-                    continue;
-                }
-                kind = MoveType::Capture;
+            // Ignore captures.
+            if self.data.has_piece(dest) {
+                continue;
             }
 
             // For every piece that attacks this square, find its location and add it to the move list.
@@ -969,15 +1008,31 @@ impl Board {
                 .and(!pinned)
             {
                 let from = self.data.square_of_piece(attacker);
-                v.push(Move::new(from, dest, kind, None));
+                v.push(Move::new(from, dest, MoveType::Normal, None));
             }
         }
+    }
 
-        // Pawns.
-        self.generate_pawns(v, pinned, enpassant_pinned);
+    #[must_use]
+    pub const fn kings(&self) -> Bitlist {
+        self.data.kings()
+    }
 
-        // King.
-        self.generate_king(v);
+    /// Return a bitlist of all pieces.
+    #[must_use]
+    pub const fn pieces(&self) -> Bitlist {
+        self.data.pieces()
+    }
+
+    /// Given a piece index, return its piece type.
+    #[must_use]
+    pub fn piece_from_bit(&self, bit: PieceIndex) -> Piece {
+        self.data.piece_from_bit(bit)
+    }
+
+    #[must_use]
+    pub fn square_of_piece(&self, bit: PieceIndex) -> Square {
+        self.data.square_of_piece(bit)
     }
 }
 

@@ -710,6 +710,13 @@ impl Square {
     pub const fn king_attacks(self) -> KingIter {
         KingIter(self, 0)
     }
+
+    #[must_use]
+    pub const fn flip(self) -> Self {
+        unsafe {
+            Self::from_u8_unchecked(self.into_inner() ^ 56)
+        }
+    }
 }
 
 /// A chess direction.
