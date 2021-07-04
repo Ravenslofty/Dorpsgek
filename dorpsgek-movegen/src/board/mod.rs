@@ -363,6 +363,7 @@ impl Board {
     }
 
     /// Find pinned pieces and handle them specially.
+    #[allow(clippy::too_many_lines)]
     fn generate_pinned_pieces(&self, v: &mut ArrayVec<[Move; 256]>) -> Bitlist {
         let mut pinned = Bitlist::new();
 
@@ -495,6 +496,7 @@ impl Board {
     }
 
     /// Generate pawn-specific moves.
+    #[allow(clippy::too_many_lines)]
     fn generate_pawn(
         &self,
         v: &mut ArrayVec<[Move; 256]>,
@@ -694,6 +696,7 @@ impl Board {
     }
 
     /// Generate moves when in check by a single piece.
+    #[allow(clippy::too_many_lines)]
     fn generate_single_check(&self, v: &mut ArrayVec<[Move; 256]>) {
         #[allow(clippy::unwrap_used)]
         let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
@@ -804,6 +807,7 @@ impl Board {
                     .attacks_to(dest, self.side)
                     .and(!self.data.pawns())
                     .and(!self.data.kings())
+                    .and(!pinned)
                 {
                     let from = self.data.square_of_piece(attacker);
                     v.push(Move::new(from, dest, MoveType::Normal, None));
@@ -832,9 +836,9 @@ impl Board {
                 // Moving into check is illegal.
                 continue;
             }
-            if let Some(dir) = attacker_direction {
+            if let Some(attacker_direction) = attacker_direction {
                 // Slider attacks x-ray through the king to attack that square.
-                if let Some(xray_square) = king_square.travel(dir) {
+                if let Some(xray_square) = king_square.travel(attacker_direction) {
                     if matches!(attacker_piece, Piece::Bishop | Piece::Rook | Piece::Queen)
                         && xray_square == square
                     {
@@ -854,19 +858,22 @@ impl Board {
             .peek()
             .unwrap();
         let king_square = self.data.square_of_piece(king_index);
-        let attacker_bit = self.data.attacks_to(king_square, !self.side);
-        let attacker_index = attacker_bit.peek().unwrap();
-        let attacker_piece = self.data.piece_from_bit(attacker_index);
-        let attacker_square = self.data.square_of_piece(attacker_index);
-        let attacker_direction = attacker_square.direction(king_square);
+        let mut attacker_bits = self.data.attacks_to(king_square, !self.side);
+        let attacker1_index = attacker_bits.pop().unwrap();
+        let attacker1_piece = self.data.piece_from_bit(attacker1_index);
+        let attacker1_square = self.data.square_of_piece(attacker1_index);
+        let attacker1_direction = attacker1_square.direction(king_square);
+        let attacker2_index = attacker_bits.pop().unwrap();
+        let attacker2_piece = self.data.piece_from_bit(attacker2_index);
+        let attacker2_square = self.data.square_of_piece(attacker2_index);
+        let attacker2_direction = attacker2_square.direction(king_square);
 
         // Can we move the king?
         for square in king_square.king_attacks() {
             let kind = if self.data.has_piece(square) {
-                if square == attacker_square
-                    || self.data.colour_from_square(square) == Some(self.side)
+                if self.data.colour_from_square(square) == Some(self.side)
                 {
-                    // Own-piece captures are illegal, captures of the attacker are handled elsewhere.
+                    // Own-piece captures are illegal.
                     continue;
                 }
                 MoveType::Capture
@@ -878,10 +885,21 @@ impl Board {
                 // Moving into check is illegal.
                 continue;
             }
-            if let Some(dir) = attacker_direction {
-                // Slider attacks x-ray through the king to attack that square.
-                if let Some(xray_square) = king_square.travel(dir) {
-                    if matches!(attacker_piece, Piece::Bishop | Piece::Rook | Piece::Queen)
+
+            // Slider attacks x-ray through the king to attack that square.
+            if let Some(attacker1_direction) = attacker1_direction {
+                if let Some(xray_square) = king_square.travel(attacker1_direction) {
+                    if matches!(attacker1_piece, Piece::Bishop | Piece::Rook | Piece::Queen)
+                        && xray_square == square
+                    {
+                        continue;
+                    }
+                }
+            }
+
+            if let Some(attacker2_direction) = attacker2_direction {
+                if let Some(xray_square) = king_square.travel(attacker2_direction) {
+                    if matches!(attacker2_piece, Piece::Bishop | Piece::Rook | Piece::Queen)
                         && xray_square == square
                     {
                         continue;

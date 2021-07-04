@@ -498,7 +498,9 @@ impl Square16x8 {
     pub(crate) fn add_dir(self, dir: Direction) -> Self {
         let sq = i16::from(self.0);
         let sq = sq.wrapping_add(dir.to_16x8());
-        Self(sq as u8)
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let sq = Self(sq as u8);
+        sq
     }
 
     /// Return the `Direction` between two squares, if any exists.

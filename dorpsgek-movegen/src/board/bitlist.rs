@@ -68,7 +68,7 @@ impl Bitlist {
     }
 
     /// Return the lowest set bit of a `Bitlist` as a `PieceIndex`, if it exists.
-    pub fn peek(self) -> Option<PieceIndex> {
+    pub const fn peek(self) -> Option<PieceIndex> {
         if self.0 == 0 {
             return None;
         }
@@ -141,7 +141,7 @@ impl BitOr for Bitlist {
 
 impl BitOrAssign for Bitlist {
     fn bitor_assign(&mut self, rhs: Self) {
-        self.0 |= rhs.0
+        self.0 |= rhs.0;
     }
 }
 

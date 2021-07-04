@@ -79,12 +79,12 @@ pub fn perft_bench(c: &mut Criterion<PosixTime>) {
         })
     });
 
-    /* group.throughput(Throughput::Elements(197_281));
+    group.throughput(Throughput::Elements(197_281));
     group.bench_with_input("4", &board, |b, board| {
         b.iter(|| {
             assert_eq!(perft(board, 4), 197_281);
         })
-    }); */
+    });
 
     group.finish();
 
@@ -98,28 +98,28 @@ pub fn perft_bench(c: &mut Criterion<PosixTime>) {
     group.significance_level(0.005);
     group.noise_threshold(0.025);
 
-    group.throughput(Throughput::Elements(46));
+    group.throughput(Throughput::Elements(48));
     group.bench_with_input("1", &board, |b, board| {
         b.iter(|| {
-            assert_eq!(perft(board, 1), 46);
+            assert_eq!(perft(board, 1), 48);
         })
     });
 
     group.sample_size(100);
 
-    group.throughput(Throughput::Elements(1866));
+    group.throughput(Throughput::Elements(2039));
     group.bench_with_input("2", &board, |b, board| {
         b.iter(|| {
-            assert_eq!(perft(board, 2), 1866);
+            assert_eq!(perft(board, 2), 2039);
         })
     });
 
     group.sample_size(20);
 
-    group.throughput(Throughput::Elements(86677));
+    group.throughput(Throughput::Elements(97862));
     group.bench_with_input("3", &board, |b, board| {
         b.iter(|| {
-            assert_eq!(perft(board, 3), 86677);
+            assert_eq!(perft(board, 3), 97862);
         })
     });
 
