@@ -364,8 +364,9 @@ impl Board {
 
     /// Find pinned pieces and handle them specially.
     #[allow(clippy::too_many_lines)]
-    fn generate_pinned_pieces(&self, v: &mut ArrayVec<[Move; 256]>) -> Bitlist {
+    fn generate_pinned_pieces(&self, v: &mut ArrayVec<[Move; 256]>) -> (Bitlist, Bitlist) {
         let mut pinned = Bitlist::new();
+        let mut enpassant_pinned = Bitlist::new();
 
         let sliders = self.data.bishops() | self.data.rooks() | self.data.queens();
         let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
@@ -479,7 +480,7 @@ impl Board {
                     }
 
                     // Alas, we do have to care.
-                    pinned |= Bitlist::from(friendly_blocker) | Bitlist::from(enemy_blocker);
+                    enpassant_pinned |= Bitlist::from(friendly_blocker);
 
                     self.generate_pawn(
                         v,
@@ -492,7 +493,7 @@ impl Board {
             }
         }
 
-        pinned
+        (pinned, enpassant_pinned)
     }
 
     /// Generate pawn-specific moves.
@@ -621,12 +622,13 @@ impl Board {
     }
 
     /// Generate pawn-specific moves.
-    fn generate_pawns(&self, v: &mut ArrayVec<[Move; 256]>, pinned: Bitlist) {
+    fn generate_pawns(&self, v: &mut ArrayVec<[Move; 256]>, pinned: Bitlist, enpassant_pinned: Bitlist) {
         for pawn in self
             .data
             .pawns()
             .and(Bitlist::mask_from_colour(self.side))
             .and(!pinned)
+            .and(!enpassant_pinned)
         {
             let from = self.data.square_of_piece(pawn);
             self.generate_pawn(v, from, None, false, false);
@@ -710,11 +712,11 @@ impl Board {
         let attacker_square = self.data.square_of_piece(attacker_index);
         let attacker_direction = attacker_square.direction(king_square);
 
-        let pinned = self.generate_pinned_pieces(v);
+        let (pinned, enpassant_pinned) = self.generate_pinned_pieces(v);
 
         let add_pawn_block = |v: &mut ArrayVec<[Move; 256]>, from, dest, kind| {
             if let Some(colour) = self.data.colour_from_square(from) {
-                if colour == self.side {
+                if colour == self.side && !pinned.contains(self.data.piece_index(from).unwrap().into()) {
                     v.push(Move::new(from, dest, kind, None));
                 }
             }
@@ -739,7 +741,7 @@ impl Board {
         };
 
         // Can we capture the attacker?
-        for capturer in self.data.attacks_to(attacker_square, self.side) & !pinned {
+        for capturer in self.data.attacks_to(attacker_square, self.side) & !pinned & !enpassant_pinned {
             let from = self.data.square_of_piece(capturer);
             if self.data.piece_from_bit(capturer) == Piece::King
                 && !self.data.attacks_to(attacker_square, !self.side).empty()
@@ -781,7 +783,7 @@ impl Board {
         if let Some(ep) = self.ep {
             if let Some(ep_south) = ep.relative_south(self.side) {
                 if ep_south == attacker_square && attacker_piece == Piece::Pawn {
-                    for capturer in self.data.attacks_to(ep, self.side) & self.data.pawns() & !pinned {
+                    for capturer in self.data.attacks_to(ep, self.side) & self.data.pawns() & !pinned & !enpassant_pinned {
                         v.push(Move::new(
                             self.data.square_of_piece(capturer),
                             ep,
@@ -929,7 +931,7 @@ impl Board {
             return self.generate_double_check(v);
         }
 
-        let pinned = self.generate_pinned_pieces(v);
+        let (pinned, enpassant_pinned) = self.generate_pinned_pieces(v);
 
         // General attack loop; pawns and kings handled separately.
         for dest in 0_u8..64 {
@@ -960,7 +962,7 @@ impl Board {
         }
 
         // Pawns.
-        self.generate_pawns(v, pinned);
+        self.generate_pawns(v, pinned, enpassant_pinned);
 
         // King.
         self.generate_king(v);
