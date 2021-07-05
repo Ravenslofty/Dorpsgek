@@ -1,7 +1,7 @@
 use dorpsgek::Search;
 use dorpsgek_movegen::Board;
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 fn main() {
     let board =
@@ -9,7 +9,7 @@ fn main() {
             .unwrap();
     let mut s = Search::new();
     let start = Instant::now();
-    for depth in 1..=2 {
+    for depth in 1..=8 {
         let score = s.search(&board, depth, -100_000, 100_000);
         let now = Instant::now().duration_since(start);
         println!(

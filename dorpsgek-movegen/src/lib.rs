@@ -29,8 +29,8 @@ mod piece;
 mod square;
 
 pub use board::{Board, PieceIndex};
-pub use colour::Colour;
 pub use chessmove::{Move, MoveType};
+pub use colour::Colour;
 pub use piece::Piece;
 pub use square::Square;
 use tinyvec::ArrayVec;

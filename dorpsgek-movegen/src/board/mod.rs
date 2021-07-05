@@ -21,7 +21,11 @@ use crate::{
     piece::Piece,
     square::{Direction, File, Rank, Square, Square16x8},
 };
-use std::{convert::{TryFrom, TryInto}, ffi::CString, fmt::Display};
+use std::{
+    convert::{TryFrom, TryInto},
+    ffi::CString,
+    fmt::Display,
+};
 
 use tinyvec::ArrayVec;
 
@@ -365,8 +369,11 @@ impl Board {
     }
 
     /// Find pinned pieces and handle them specially.
+    ///
+    /// # Panics
+    /// Panics when Lofty has written shitty code.
     #[allow(clippy::too_many_lines)]
-    fn generate_pinned_pieces(&self, v: &mut ArrayVec<[Move; 256]>) -> (Bitlist, Bitlist) {
+    pub fn generate_pinned_pieces(&self, v: &mut ArrayVec<[Move; 256]>) -> (Bitlist, Bitlist) {
         let mut pinned = Bitlist::new();
         let mut enpassant_pinned = Bitlist::new();
 
@@ -452,14 +459,10 @@ impl Board {
                                     v,
                                     blocker_square,
                                     Some(pinner_king_dir),
-                                    false
+                                    false,
                                 );
-                                self.generate_pawn_quiet(
-                                    v,
-                                    blocker_square,
-                                    Some(pinner_king_dir)
-                                );
-                            },
+                                self.generate_pawn_quiet(v, blocker_square, Some(pinner_king_dir));
+                            }
                             Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
                             Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
                             Piece::Queen => generate_ray(),
@@ -494,13 +497,13 @@ impl Board {
                         v,
                         self.data.square_of_piece(friendly_blocker),
                         None,
-                        true
+                        true,
                     );
                     if !in_check {
                         self.generate_pawn_quiet(
                             v,
                             self.data.square_of_piece(friendly_blocker),
-                            None
+                            None,
                         );
                     }
                 }
@@ -610,10 +613,16 @@ impl Board {
         v: &mut ArrayVec<[Move; 256]>,
         dir: Option<Direction>,
         pinned: Bitlist,
-        enpassant_pinned: Bitlist
+        enpassant_pinned: Bitlist,
     ) {
         if let Some(ep) = self.ep {
-            for capturer in self.data.attacks_to(ep, self.side).and(self.data.pawns()).and(!pinned).and(!enpassant_pinned) {
+            for capturer in self
+                .data
+                .attacks_to(ep, self.side)
+                .and(self.data.pawns())
+                .and(!pinned)
+                .and(!enpassant_pinned)
+            {
                 let from = self.data.square_of_piece(capturer);
                 if let Some(dir) = dir {
                     if let Some(move_dir) = from.direction(ep) {
@@ -676,21 +685,15 @@ impl Board {
     }
 
     /// Generate king-specific moves.
-    fn generate_king(&self, v: &mut ArrayVec<[Move; 256]>) {
+    fn generate_king_quiet(&self, v: &mut ArrayVec<[Move; 256]>) {
         if let Some(piece_index) = (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek()
         {
             let square = self.data.square_of_piece(piece_index);
 
             // King moves.
             for dest in square.king_attacks() {
-                let mut kind = MoveType::Normal;
-
-                if let Some(colour) = self.data.colour_from_square(dest) {
-                    if colour == self.side {
-                        // Forbid own-colour captures.
-                        continue;
-                    }
-                    kind = MoveType::Capture;
+                if self.data.has_piece(dest) {
+                    continue;
                 }
 
                 // It's illegal for kings to move to attacked squares; prune those out.
@@ -698,7 +701,7 @@ impl Board {
                     continue;
                 }
 
-                v.push(Move::new(square, dest, kind, None));
+                v.push(Move::new(square, dest, MoveType::Normal, None));
             }
 
             // Kingside castling.
@@ -959,34 +962,41 @@ impl Board {
         }
     }
 
-    /// Generate a vector of moves on the board.
-    #[allow(clippy::missing_inline_in_public_items)]
-    pub fn generate(&self, v: &mut ArrayVec<[Move; 256]>) {
-        // Unless something has gone very badly wrong we have to have a king.
-        let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
-            .peek()
-            .expect("side to move has no king");
-        let king_square = self.data.square_of_piece(king_index);
-        let checks = self.data.attacks_to(king_square, !self.side);
-
-        if checks.count_ones() == 1 {
-            return self.generate_single_check(v);
-        }
-        if checks.count_ones() == 2 {
-            return self.generate_double_check(v);
-        }
-
-        let (pinned, enpassant_pinned) = self.generate_pinned_pieces(v);
-
+    pub fn generate_captures(
+        &self,
+        v: &mut ArrayVec<[Move; 256]>,
+        pinned: Bitlist,
+        enpassant_pinned: Bitlist,
+    ) {
         let mut find_attackers = |dest: Square| {
             let attacks = self.data.attacks_to(dest, self.side);
             for capturer in attacks & self.data.pawns() & !pinned {
                 let from = self.data.square_of_piece(capturer);
                 if Rank::from(dest).is_relative_eighth(self.side) {
-                    v.push(Move::new(from, dest, MoveType::CapturePromotion, Some(Piece::Queen)));
-                    v.push(Move::new(from, dest, MoveType::CapturePromotion, Some(Piece::Knight)));
-                    v.push(Move::new(from, dest, MoveType::CapturePromotion, Some(Piece::Rook)));
-                    v.push(Move::new(from, dest, MoveType::CapturePromotion, Some(Piece::Bishop)));
+                    v.push(Move::new(
+                        from,
+                        dest,
+                        MoveType::CapturePromotion,
+                        Some(Piece::Queen),
+                    ));
+                    v.push(Move::new(
+                        from,
+                        dest,
+                        MoveType::CapturePromotion,
+                        Some(Piece::Knight),
+                    ));
+                    v.push(Move::new(
+                        from,
+                        dest,
+                        MoveType::CapturePromotion,
+                        Some(Piece::Rook),
+                    ));
+                    v.push(Move::new(
+                        from,
+                        dest,
+                        MoveType::CapturePromotion,
+                        Some(Piece::Bishop),
+                    ));
                 } else {
                     v.push(Move::new(from, dest, MoveType::Capture, None));
                 }
@@ -1005,6 +1015,14 @@ impl Board {
             }
             for capturer in attacks & self.data.queens() & !pinned {
                 let from = self.data.square_of_piece(capturer);
+                v.push(Move::new(from, dest, MoveType::Capture, None));
+            }
+            for capturer in attacks & self.data.kings() {
+                let from = self.data.square_of_piece(capturer);
+                if !self.data.attacks_to(dest, !self.side).empty() {
+                    // Moving into check is illegal.
+                    continue;
+                }
                 v.push(Move::new(from, dest, MoveType::Capture, None));
             }
         };
@@ -1026,6 +1044,28 @@ impl Board {
         }
 
         self.generate_pawn_enpassant(v, None, pinned, enpassant_pinned);
+    }
+
+    /// Generate a vector of moves on the board.
+    #[allow(clippy::missing_inline_in_public_items)]
+    pub fn generate(&self, v: &mut ArrayVec<[Move; 256]>) {
+        // Unless something has gone very badly wrong we have to have a king.
+        let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
+            .peek()
+            .expect("side to move has no king");
+        let king_square = self.data.square_of_piece(king_index);
+        let checks = self.data.attacks_to(king_square, !self.side);
+
+        if checks.count_ones() == 1 {
+            return self.generate_single_check(v);
+        }
+        if checks.count_ones() == 2 {
+            return self.generate_double_check(v);
+        }
+
+        let (pinned, enpassant_pinned) = self.generate_pinned_pieces(v);
+
+        self.generate_captures(v, pinned, enpassant_pinned);
 
         // Pawns.
         for pawn in self
@@ -1040,9 +1080,9 @@ impl Board {
         }
 
         // King.
-        self.generate_king(v);
+        self.generate_king_quiet(v);
 
-        // General attack loop; pawns and kings handled separately.
+        // General quiet move loop; pawns and kings handled separately.
         for dest in 0_u8..64 {
             // Squares will always be in range, so this will never panic.
             let dest = unsafe { Square::from_u8_unchecked(dest) };

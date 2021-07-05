@@ -713,9 +713,7 @@ impl Square {
 
     #[must_use]
     pub const fn flip(self) -> Self {
-        unsafe {
-            Self::from_u8_unchecked(self.into_inner() ^ 56)
-        }
+        unsafe { Self::from_u8_unchecked(self.into_inner() ^ 56) }
     }
 }
 

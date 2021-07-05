@@ -70,7 +70,10 @@ impl Move {
 
     #[must_use]
     pub const fn is_capture(&self) -> bool {
-        matches!(self.kind, MoveType::Capture | MoveType::CapturePromotion | MoveType::EnPassant)
+        matches!(
+            self.kind,
+            MoveType::Capture | MoveType::CapturePromotion | MoveType::EnPassant
+        )
     }
 }
 

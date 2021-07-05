@@ -27,24 +27,25 @@ impl Search {
     pub fn quiesce(&mut self, board: &Board, mut alpha: i32, beta: i32) -> i32 {
         let eval = self.eval.eval(board);
 
+        if eval >= beta {
+            return beta;
+        }
         if eval > alpha {
-            if eval >= beta {
-                return beta;
-            }
             alpha = eval;
         }
-
-        self.qnodes += 1;
 
         let moves: [Move; 256] = [Move::default(); 256];
         let mut moves = ArrayVec::from(moves);
         moves.set_len(0);
-        board.generate(&mut moves);
+        let (pinned, enpassant_pinned) = board.generate_pinned_pieces(&mut moves);
+        board.generate_captures(&mut moves, pinned, enpassant_pinned);
 
         for m in moves {
             if !m.is_capture() {
                 continue;
             }
+
+            self.qnodes += 1;
 
             let board = board.make(m);
             let score = -self.quiesce(&board, -beta, -alpha);
@@ -65,16 +66,15 @@ impl Search {
             return self.quiesce(board, alpha, beta);
         }
 
-        self.nodes += 1;
-
         let moves: [Move; 256] = [Move::default(); 256];
         let mut moves = ArrayVec::from(moves);
         moves.set_len(0);
         board.generate(&mut moves);
 
         for m in moves {
-            let board = board.make(m);
+            self.nodes += 1;
 
+            let board = board.make(m);
             let score = -self.search(&board, depth - 1, -beta, -alpha);
 
             if score >= beta {
