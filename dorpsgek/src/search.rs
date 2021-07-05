@@ -1,5 +1,5 @@
-use tinyvec::ArrayVec;
 use dorpsgek_movegen::{Board, Move};
+use tinyvec::ArrayVec;
 
 use crate::eval::Eval;
 
@@ -24,7 +24,7 @@ impl Search {
         }
     }
 
-    pub fn quiesce(&mut self, board: &Board, mut alpha: f64, beta: f64) -> f64 {
+    pub fn quiesce(&mut self, board: &Board, mut alpha: i32, beta: i32) -> i32 {
         let eval = self.eval.eval(board);
 
         if eval > alpha {
@@ -49,10 +49,10 @@ impl Search {
             let board = board.make(m);
             let score = -self.quiesce(&board, -beta, -alpha);
 
+            if score >= beta {
+                return beta;
+            }
             if score > alpha {
-                if score >= beta {
-                    return beta;
-                }
                 alpha = score;
             }
         }
@@ -60,7 +60,7 @@ impl Search {
         alpha
     }
 
-    pub fn search(&mut self, board: &Board, depth: i32, mut alpha: f64, beta: f64) -> f64 {
+    pub fn search(&mut self, board: &Board, depth: i32, mut alpha: i32, beta: i32) -> i32 {
         if depth <= 0 {
             return self.quiesce(board, alpha, beta);
         }
@@ -77,10 +77,10 @@ impl Search {
 
             let score = -self.search(&board, depth - 1, -beta, -alpha);
 
+            if score >= beta {
+                return beta;
+            }
             if score > alpha {
-                if score >= beta {
-                    return beta;
-                }
                 alpha = score;
             }
         }

@@ -1,19 +1,17 @@
 use dorpsgek_movegen::{Board, Colour, Piece, Square};
 
 pub struct Eval {
-    params: [f64; 5+4+4],
-    pst: [[f64; 64]; 6]
+    params: [f64; 5 + 4 + 4],
+    pst: [[i32; 64]; 6],
 }
 
 impl Eval {
     pub fn new() -> Self {
         let mut s = Self {
             params: [
-                0.9, 3.25, 3.5, 5.0, 9.5,
-                0.1, 0.2, 0.3, 0.4,
-                0.1, 0.2, 0.3, 0.4
+                1.0, 3.0, 3.5, 5.0, 9.5, -0.1, -0.05, 0.05, 0.1, -0.1, -0.05, 0.05, 0.1,
             ],
-            pst: [[0.0; 64]; 6]
+            pst: [[0; 64]; 6],
         };
         s.recalculate();
         s
@@ -42,13 +40,13 @@ impl Eval {
                     bonus += file[7 - square_file];
                 }
 
-                self.pst[piece][square] = piece_value + bonus;
+                self.pst[piece][square] = (100.0*(piece_value + bonus)) as i32;
             }
         }
     }
 
-    pub fn eval(&self, board: &Board) -> f64 {
-        let mut score = 0.0;
+    pub fn eval(&self, board: &Board) -> i32 {
+        let mut score = 0;
 
         for piece in board.pieces() {
             let square = board.square_of_piece(piece);
@@ -67,7 +65,7 @@ impl Eval {
         }
     }
 
-    fn piece_square_value(&self, piece: Piece, square: Square) -> f64 {
+    fn piece_square_value(&self, piece: Piece, square: Square) -> i32 {
         match piece {
             Piece::Pawn => self.pst[0][square.into_inner() as usize],
             Piece::Knight => self.pst[1][square.into_inner() as usize],

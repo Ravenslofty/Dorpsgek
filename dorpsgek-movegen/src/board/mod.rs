@@ -447,13 +447,19 @@ impl Board {
                     // This piece is pinned.
                     if !in_check {
                         match self.data.piece_from_bit(blocker) {
-                            Piece::Pawn => self.generate_pawn(
-                                v,
-                                blocker_square,
-                                Some(pinner_king_dir),
-                                false,
-                                false,
-                            ),
+                            Piece::Pawn => {
+                                self.generate_pawn_captures(
+                                    v,
+                                    blocker_square,
+                                    Some(pinner_king_dir),
+                                    false
+                                );
+                                self.generate_pawn_quiet(
+                                    v,
+                                    blocker_square,
+                                    Some(pinner_king_dir)
+                                );
+                            },
                             Piece::Bishop if pinner_king_dir.diagonal() => generate_ray(),
                             Piece::Rook if pinner_king_dir.orthogonal() => generate_ray(),
                             Piece::Queen => generate_ray(),
@@ -484,13 +490,19 @@ impl Board {
                     // Alas, we do have to care.
                     enpassant_pinned |= Bitlist::from(friendly_blocker);
 
-                    self.generate_pawn(
+                    self.generate_pawn_captures(
                         v,
                         self.data.square_of_piece(friendly_blocker),
                         None,
-                        true,
-                        in_check,
+                        true
                     );
+                    if !in_check {
+                        self.generate_pawn_quiet(
+                            v,
+                            self.data.square_of_piece(friendly_blocker),
+                            None
+                        );
+                    }
                 }
             }
         }
@@ -498,15 +510,13 @@ impl Board {
         (pinned, enpassant_pinned)
     }
 
-    /// Generate pawn-specific moves.
-    #[allow(clippy::too_many_lines)]
-    fn generate_pawn(
+    /// Generate pawn captures.
+    fn generate_pawn_captures(
         &self,
         v: &mut ArrayVec<[Move; 256]>,
         from: Square,
         dir: Option<Direction>,
         no_ep: bool,
-        capture_only: bool,
     ) {
         let push = |v: &mut ArrayVec<[Move; 256]>,
                     from: Square,
@@ -520,14 +530,6 @@ impl Board {
                         return;
                     }
                 }
-            }
-            if capture_only
-                && !matches!(
-                    kind,
-                    MoveType::Capture | MoveType::CapturePromotion | MoveType::EnPassant
-                )
-            {
-                return;
             }
             v.push(Move::new(from, dest, kind, prom));
         };
@@ -549,6 +551,14 @@ impl Board {
                             from,
                             dest,
                             MoveType::CapturePromotion,
+                            Some(Piece::Knight),
+                            dir,
+                        );
+                        push(
+                            v,
+                            from,
+                            dest,
+                            MoveType::CapturePromotion,
                             Some(Piece::Rook),
                             dir,
                         );
@@ -560,14 +570,6 @@ impl Board {
                             Some(Piece::Bishop),
                             dir,
                         );
-                        push(
-                            v,
-                            from,
-                            dest,
-                            MoveType::CapturePromotion,
-                            Some(Piece::Knight),
-                            dir,
-                        );
                     } else {
                         push(v, from, dest, MoveType::Capture, None, dir);
                     }
@@ -577,27 +579,6 @@ impl Board {
 
         let north = from.relative_north(self.side);
         if let Some(dest) = north {
-            // Pawn single pushes.
-            if !self.data.has_piece(dest) {
-                if Rank::from(dest).is_relative_eighth(self.side) {
-                    push(v, from, dest, MoveType::Promotion, Some(Piece::Queen), dir);
-                    push(v, from, dest, MoveType::Promotion, Some(Piece::Rook), dir);
-                    push(v, from, dest, MoveType::Promotion, Some(Piece::Bishop), dir);
-                    push(v, from, dest, MoveType::Promotion, Some(Piece::Knight), dir);
-                } else {
-                    push(v, from, dest, MoveType::Normal, None, dir);
-                }
-
-                // Pawn double pushes.
-                let north2 = dest.relative_north(self.side);
-                if let Some(dest) = north2 {
-                    if Rank::from(dest).is_relative_fourth(self.side) && !self.data.has_piece(dest)
-                    {
-                        push(v, from, dest, MoveType::DoublePush, None, dir);
-                    }
-                }
-            }
-
             let add_en_passant = |dest: Square, v: &mut ArrayVec<[Move; 256]>| {
                 if let Some(ep) = self.ep {
                     if let Some(possible_pawn) = ep.relative_south(self.side) {
@@ -623,6 +604,54 @@ impl Board {
         }
     }
 
+    /// Generate pawn-specific quiet moves.
+    fn generate_pawn_quiet(
+        &self,
+        v: &mut ArrayVec<[Move; 256]>,
+        from: Square,
+        dir: Option<Direction>,
+    ) {
+        let push = |v: &mut ArrayVec<[Move; 256]>,
+                    from: Square,
+                    dest: Square,
+                    kind: MoveType,
+                    prom: Option<Piece>,
+                    dir: Option<Direction>| {
+            if let Some(dir) = dir {
+                if let Some(move_dir) = from.direction(dest) {
+                    if dir != move_dir && dir != move_dir.opposite() {
+                        return;
+                    }
+                }
+            }
+            v.push(Move::new(from, dest, kind, prom));
+        };
+
+        let north = from.relative_north(self.side);
+        if let Some(dest) = north {
+            // Pawn single pushes.
+            if !self.data.has_piece(dest) {
+                if Rank::from(dest).is_relative_eighth(self.side) {
+                    push(v, from, dest, MoveType::Promotion, Some(Piece::Queen), dir);
+                    push(v, from, dest, MoveType::Promotion, Some(Piece::Knight), dir);
+                    push(v, from, dest, MoveType::Promotion, Some(Piece::Rook), dir);
+                    push(v, from, dest, MoveType::Promotion, Some(Piece::Bishop), dir);
+                } else {
+                    push(v, from, dest, MoveType::Normal, None, dir);
+                }
+
+                // Pawn double pushes.
+                let north2 = dest.relative_north(self.side);
+                if let Some(dest) = north2 {
+                    if Rank::from(dest).is_relative_fourth(self.side) && !self.data.has_piece(dest)
+                    {
+                        push(v, from, dest, MoveType::DoublePush, None, dir);
+                    }
+                }
+            }
+        }
+    }
+
     /// Generate pawn-specific moves.
     fn generate_pawns(
         &self,
@@ -638,7 +667,8 @@ impl Board {
             .and(!enpassant_pinned)
         {
             let from = self.data.square_of_piece(pawn);
-            self.generate_pawn(v, from, None, false, false);
+            self.generate_pawn_captures(v, from, None, false);
+            self.generate_pawn_quiet(v, from, None);
         }
     }
 
@@ -772,6 +802,12 @@ impl Board {
                     from,
                     attacker_square,
                     MoveType::CapturePromotion,
+                    Some(Piece::Knight),
+                ));
+                v.push(Move::new(
+                    from,
+                    attacker_square,
+                    MoveType::CapturePromotion,
                     Some(Piece::Rook),
                 ));
                 v.push(Move::new(
@@ -779,12 +815,6 @@ impl Board {
                     attacker_square,
                     MoveType::CapturePromotion,
                     Some(Piece::Bishop),
-                ));
-                v.push(Move::new(
-                    from,
-                    attacker_square,
-                    MoveType::CapturePromotion,
-                    Some(Piece::Knight),
                 ));
             } else {
                 v.push(Move::new(from, attacker_square, MoveType::Capture, None));
@@ -868,7 +898,6 @@ impl Board {
         }
     }
 
-    #[allow(clippy::unused_self)]
     fn generate_double_check(&self, v: &mut ArrayVec<[Move; 256]>) {
         #[allow(clippy::unwrap_used)]
         let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
@@ -940,7 +969,6 @@ impl Board {
         if checks.count_ones() == 1 {
             return self.generate_single_check(v);
         }
-
         if checks.count_ones() == 2 {
             return self.generate_double_check(v);
         }
@@ -952,6 +980,14 @@ impl Board {
 
         let mut find_attackers = |dest: Square| {
             let attacks = self.data.attacks_to(dest, self.side);
+            /*for capturer in attacks & self.data.pawns() & !pinned {
+                let from = self.data.square_of_piece(capturer);
+                if Rank::from(dest).is_relative_eighth(self.side) {
+
+                } else {
+                    v.push(Move::new(from, dest, MoveType::Capture, None));
+                }
+            }*/
             for capturer in attacks & self.data.knights() & !pinned {
                 let from = self.data.square_of_piece(capturer);
                 v.push(Move::new(from, dest, MoveType::Capture, None));

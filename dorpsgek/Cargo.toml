@@ -8,5 +8,4 @@ edition = "2018"
 
 [dependencies]
 dorpsgek-movegen = { path = "../dorpsgek-movegen" }
-autodiff = "0.3"
 tinyvec = "0.3"
