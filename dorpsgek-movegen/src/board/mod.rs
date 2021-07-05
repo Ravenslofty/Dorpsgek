@@ -38,7 +38,6 @@ pub use index::PieceIndex;
 /// Pin information in a board.
 pub struct PinInfo {
     pub pins: [Option<Direction>; 32],
-    pub pinned: Bitlist,
     pub enpassant_pinned: Bitlist,
 }
 
@@ -46,7 +45,6 @@ impl PinInfo {
     pub const fn new() -> Self {
         Self {
             pins: [None; 32],
-            pinned: Bitlist::new(),
             enpassant_pinned: Bitlist::new()
         }
     }
@@ -411,7 +409,6 @@ impl Board {
     ///
     /// # Panics
     /// Panics when Lofty has written shitty code.
-    #[allow(clippy::too_many_lines)]
     #[must_use]
     pub fn discover_pinned_pieces(&self) -> PinInfo {
         let mut info = PinInfo::new();
@@ -476,7 +473,6 @@ impl Board {
                 // There is one friendly blocker: it is pinned.
                 (Some(blocker), None) => {
                     info.pins[blocker.into_inner() as usize] = Some(pinner_king_dir);
-                    info.pinned |= Bitlist::from(blocker);
                 }
                 // There is one friendly blocker and one enemy blocker: it *may* be pinned for en-passant purposes
                 (Some(friendly_blocker), Some(enemy_blocker)) => {
