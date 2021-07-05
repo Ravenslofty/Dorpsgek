@@ -97,8 +97,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 66);
         assert_eq!(perft(&startpos, 3), 1197);
         assert_eq!(perft(&startpos, 4), 7059);
-        assert_eq!(perft(&startpos, 5), 133987);
-        assert_eq!(perft(&startpos, 6), 764643);
+        assert_eq!(perft(&startpos, 5), 133_987);
+        assert_eq!(perft(&startpos, 6), 764_643);
     }
 
     #[test]
@@ -108,8 +108,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 71);
         assert_eq!(perft(&startpos, 3), 1287);
         assert_eq!(perft(&startpos, 4), 7626);
-        assert_eq!(perft(&startpos, 5), 145232);
-        assert_eq!(perft(&startpos, 6), 846648);
+        assert_eq!(perft(&startpos, 5), 145_232);
+        assert_eq!(perft(&startpos, 6), 846_648);
     }
 
     #[test]
@@ -120,7 +120,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 459);
         assert_eq!(perft(&startpos, 4), 8290);
         assert_eq!(perft(&startpos, 5), 47635);
-        assert_eq!(perft(&startpos, 6), 899442);
+        assert_eq!(perft(&startpos, 6), 899_442);
     }
 
     #[test]
@@ -131,7 +131,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 493);
         assert_eq!(perft(&startpos, 4), 8897);
         assert_eq!(perft(&startpos, 5), 52710);
-        assert_eq!(perft(&startpos, 6), 1001523);
+        assert_eq!(perft(&startpos, 6), 1_001_523);
     }
 
     #[test]
@@ -141,8 +141,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 112);
         assert_eq!(perft(&startpos, 3), 3189);
         assert_eq!(perft(&startpos, 4), 17945);
-        assert_eq!(perft(&startpos, 5), 532933);
-        assert_eq!(perft(&startpos, 6), 2788982);
+        assert_eq!(perft(&startpos, 5), 532_933);
+        assert_eq!(perft(&startpos, 6), 2_788_982);
     }
 
     #[test]
@@ -152,8 +152,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 130);
         assert_eq!(perft(&startpos, 3), 782);
         assert_eq!(perft(&startpos, 4), 22180);
-        assert_eq!(perft(&startpos, 5), 118882);
-        assert_eq!(perft(&startpos, 6), 3517770);
+        assert_eq!(perft(&startpos, 5), 118_882);
+        assert_eq!(perft(&startpos, 6), 3_517_770);
     }
 
     #[test]
@@ -164,7 +164,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 564);
         assert_eq!(perft(&startpos, 4), 2219);
         assert_eq!(perft(&startpos, 5), 37735);
-        assert_eq!(perft(&startpos, 6), 185867);
+        assert_eq!(perft(&startpos, 6), 185_867);
     }
 
     #[test]
@@ -175,7 +175,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 1018);
         assert_eq!(perft(&startpos, 4), 4573);
         assert_eq!(perft(&startpos, 5), 80619);
-        assert_eq!(perft(&startpos, 6), 413018);
+        assert_eq!(perft(&startpos, 6), 413_018);
     }
 
     #[test]
@@ -186,7 +186,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 134);
         assert_eq!(perft(&startpos, 4), 2073);
         assert_eq!(perft(&startpos, 5), 10485);
-        assert_eq!(perft(&startpos, 6), 179869);
+        assert_eq!(perft(&startpos, 6), 179_869);
     }
 
     #[test]
@@ -197,7 +197,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 243);
         assert_eq!(perft(&startpos, 4), 3991);
         assert_eq!(perft(&startpos, 5), 20780);
-        assert_eq!(perft(&startpos, 6), 367724);
+        assert_eq!(perft(&startpos, 6), 367_724);
     }
 
     #[test]
@@ -206,9 +206,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 26);
         assert_eq!(perft(&startpos, 2), 568);
         assert_eq!(perft(&startpos, 3), 13744);
-        assert_eq!(perft(&startpos, 4), 314346);
-        assert_eq!(perft(&startpos, 5), 7594526);
-        assert_eq!(perft(&startpos, 6), 179862938);
+        assert_eq!(perft(&startpos, 4), 314_346);
+        assert_eq!(perft(&startpos, 5), 7_594_526);
+        assert_eq!(perft(&startpos, 6), 179_862_938);
     }
 
     #[test]
@@ -217,9 +217,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 567);
         assert_eq!(perft(&startpos, 3), 14095);
-        assert_eq!(perft(&startpos, 4), 328965);
-        assert_eq!(perft(&startpos, 5), 8153719);
-        assert_eq!(perft(&startpos, 6), 195629489);
+        assert_eq!(perft(&startpos, 4), 328_965);
+        assert_eq!(perft(&startpos, 5), 8_153_719);
+        assert_eq!(perft(&startpos, 6), 195_629_489);
     }
 
     #[test]
@@ -228,9 +228,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 548);
         assert_eq!(perft(&startpos, 3), 13502);
-        assert_eq!(perft(&startpos, 4), 312835);
-        assert_eq!(perft(&startpos, 5), 7736373);
-        assert_eq!(perft(&startpos, 6), 184411439);
+        assert_eq!(perft(&startpos, 4), 312_835);
+        assert_eq!(perft(&startpos, 5), 7_736_373);
+        assert_eq!(perft(&startpos, 6), 184_411_439);
     }
 
     #[test]
@@ -239,9 +239,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 547);
         assert_eq!(perft(&startpos, 3), 13579);
-        assert_eq!(perft(&startpos, 4), 316214);
-        assert_eq!(perft(&startpos, 5), 7878456);
-        assert_eq!(perft(&startpos, 6), 189224276);
+        assert_eq!(perft(&startpos, 4), 316_214);
+        assert_eq!(perft(&startpos, 5), 7_878_456);
+        assert_eq!(perft(&startpos, 6), 189_224_276);
     }
 
     #[test]
@@ -250,9 +250,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 26);
         assert_eq!(perft(&startpos, 2), 583);
         assert_eq!(perft(&startpos, 3), 14252);
-        assert_eq!(perft(&startpos, 4), 334705);
-        assert_eq!(perft(&startpos, 5), 8198901);
-        assert_eq!(perft(&startpos, 6), 198328929);
+        assert_eq!(perft(&startpos, 4), 334_705);
+        assert_eq!(perft(&startpos, 5), 8_198_901);
+        assert_eq!(perft(&startpos, 6), 198_328_929);
     }
 
     #[test]
@@ -261,9 +261,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 560);
         assert_eq!(perft(&startpos, 3), 13592);
-        assert_eq!(perft(&startpos, 4), 317324);
-        assert_eq!(perft(&startpos, 5), 7710115);
-        assert_eq!(perft(&startpos, 6), 185959088);
+        assert_eq!(perft(&startpos, 4), 317_324);
+        assert_eq!(perft(&startpos, 5), 7_710_115);
+        assert_eq!(perft(&startpos, 6), 185_959_088);
     }
 
     #[test]
@@ -272,9 +272,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 560);
         assert_eq!(perft(&startpos, 3), 13607);
-        assert_eq!(perft(&startpos, 4), 320792);
-        assert_eq!(perft(&startpos, 5), 7848606);
-        assert_eq!(perft(&startpos, 6), 190755813);
+        assert_eq!(perft(&startpos, 4), 320_792);
+        assert_eq!(perft(&startpos, 5), 7_848_606);
+        assert_eq!(perft(&startpos, 6), 190_755_813);
     }
 
     #[test]
@@ -285,7 +285,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 459);
         assert_eq!(perft(&startpos, 4), 8290);
         assert_eq!(perft(&startpos, 5), 47635);
-        assert_eq!(perft(&startpos, 6), 899442);
+        assert_eq!(perft(&startpos, 6), 899_442);
     }
 
     #[test]
@@ -296,7 +296,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 493);
         assert_eq!(perft(&startpos, 4), 8897);
         assert_eq!(perft(&startpos, 5), 52710);
-        assert_eq!(perft(&startpos, 6), 1001523);
+        assert_eq!(perft(&startpos, 6), 1_001_523);
     }
 
     #[test]
@@ -306,8 +306,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 66);
         assert_eq!(perft(&startpos, 3), 1197);
         assert_eq!(perft(&startpos, 4), 7059);
-        assert_eq!(perft(&startpos, 5), 133987);
-        assert_eq!(perft(&startpos, 6), 764643);
+        assert_eq!(perft(&startpos, 5), 133_987);
+        assert_eq!(perft(&startpos, 6), 764_643);
     }
 
     #[test]
@@ -317,8 +317,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 71);
         assert_eq!(perft(&startpos, 3), 1287);
         assert_eq!(perft(&startpos, 4), 7626);
-        assert_eq!(perft(&startpos, 5), 145232);
-        assert_eq!(perft(&startpos, 6), 846648);
+        assert_eq!(perft(&startpos, 5), 145_232);
+        assert_eq!(perft(&startpos, 6), 846_648);
     }
 
     #[test]
@@ -328,8 +328,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 130);
         assert_eq!(perft(&startpos, 3), 782);
         assert_eq!(perft(&startpos, 4), 22180);
-        assert_eq!(perft(&startpos, 5), 118882);
-        assert_eq!(perft(&startpos, 6), 3517770);
+        assert_eq!(perft(&startpos, 5), 118_882);
+        assert_eq!(perft(&startpos, 6), 3_517_770);
     }
 
     #[test]
@@ -339,8 +339,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 112);
         assert_eq!(perft(&startpos, 3), 3189);
         assert_eq!(perft(&startpos, 4), 17945);
-        assert_eq!(perft(&startpos, 5), 532933);
-        assert_eq!(perft(&startpos, 6), 2788982);
+        assert_eq!(perft(&startpos, 5), 532_933);
+        assert_eq!(perft(&startpos, 6), 2_788_982);
     }
 
     #[test]
@@ -351,7 +351,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 134);
         assert_eq!(perft(&startpos, 4), 2073);
         assert_eq!(perft(&startpos, 5), 10485);
-        assert_eq!(perft(&startpos, 6), 179869);
+        assert_eq!(perft(&startpos, 6), 179_869);
     }
 
     #[test]
@@ -362,7 +362,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 243);
         assert_eq!(perft(&startpos, 4), 3991);
         assert_eq!(perft(&startpos, 5), 20780);
-        assert_eq!(perft(&startpos, 6), 367724);
+        assert_eq!(perft(&startpos, 6), 367_724);
     }
 
     #[test]
@@ -373,7 +373,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 564);
         assert_eq!(perft(&startpos, 4), 2219);
         assert_eq!(perft(&startpos, 5), 37735);
-        assert_eq!(perft(&startpos, 6), 185867);
+        assert_eq!(perft(&startpos, 6), 185_867);
     }
 
     #[test]
@@ -384,7 +384,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 1018);
         assert_eq!(perft(&startpos, 4), 4573);
         assert_eq!(perft(&startpos, 5), 80619);
-        assert_eq!(perft(&startpos, 6), 413018);
+        assert_eq!(perft(&startpos, 6), 413_018);
     }
 
     #[test]
@@ -393,9 +393,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 26);
         assert_eq!(perft(&startpos, 2), 568);
         assert_eq!(perft(&startpos, 3), 13744);
-        assert_eq!(perft(&startpos, 4), 314346);
-        assert_eq!(perft(&startpos, 5), 7594526);
-        assert_eq!(perft(&startpos, 6), 179862938);
+        assert_eq!(perft(&startpos, 4), 314_346);
+        assert_eq!(perft(&startpos, 5), 7_594_526);
+        assert_eq!(perft(&startpos, 6), 179_862_938);
     }
 
     #[test]
@@ -404,9 +404,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 26);
         assert_eq!(perft(&startpos, 2), 583);
         assert_eq!(perft(&startpos, 3), 14252);
-        assert_eq!(perft(&startpos, 4), 334705);
-        assert_eq!(perft(&startpos, 5), 8198901);
-        assert_eq!(perft(&startpos, 6), 198328929);
+        assert_eq!(perft(&startpos, 4), 334_705);
+        assert_eq!(perft(&startpos, 5), 8_198_901);
+        assert_eq!(perft(&startpos, 6), 198_328_929);
     }
 
     #[test]
@@ -415,9 +415,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 560);
         assert_eq!(perft(&startpos, 3), 13592);
-        assert_eq!(perft(&startpos, 4), 317324);
-        assert_eq!(perft(&startpos, 5), 7710115);
-        assert_eq!(perft(&startpos, 6), 185959088);
+        assert_eq!(perft(&startpos, 4), 317_324);
+        assert_eq!(perft(&startpos, 5), 7_710_115);
+        assert_eq!(perft(&startpos, 6), 185_959_088);
     }
 
     #[test]
@@ -426,9 +426,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 560);
         assert_eq!(perft(&startpos, 3), 13607);
-        assert_eq!(perft(&startpos, 4), 320792);
-        assert_eq!(perft(&startpos, 5), 7848606);
-        assert_eq!(perft(&startpos, 6), 190755813);
+        assert_eq!(perft(&startpos, 4), 320_792);
+        assert_eq!(perft(&startpos, 5), 7_848_606);
+        assert_eq!(perft(&startpos, 6), 190_755_813);
     }
 
     #[test]
@@ -437,9 +437,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 567);
         assert_eq!(perft(&startpos, 3), 14095);
-        assert_eq!(perft(&startpos, 4), 328965);
-        assert_eq!(perft(&startpos, 5), 8153719);
-        assert_eq!(perft(&startpos, 6), 195629489);
+        assert_eq!(perft(&startpos, 4), 328_965);
+        assert_eq!(perft(&startpos, 5), 8_153_719);
+        assert_eq!(perft(&startpos, 6), 195_629_489);
     }
 
     #[test]
@@ -448,9 +448,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 548);
         assert_eq!(perft(&startpos, 3), 13502);
-        assert_eq!(perft(&startpos, 4), 312835);
-        assert_eq!(perft(&startpos, 5), 7736373);
-        assert_eq!(perft(&startpos, 6), 184411439);
+        assert_eq!(perft(&startpos, 4), 312_835);
+        assert_eq!(perft(&startpos, 5), 7_736_373);
+        assert_eq!(perft(&startpos, 6), 184_411_439);
     }
 
     #[test]
@@ -459,9 +459,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 25);
         assert_eq!(perft(&startpos, 2), 547);
         assert_eq!(perft(&startpos, 3), 13579);
-        assert_eq!(perft(&startpos, 4), 316214);
-        assert_eq!(perft(&startpos, 5), 7878456);
-        assert_eq!(perft(&startpos, 6), 189224276);
+        assert_eq!(perft(&startpos, 4), 316_214);
+        assert_eq!(perft(&startpos, 5), 7_878_456);
+        assert_eq!(perft(&startpos, 6), 189_224_276);
     }
 
     #[test]
@@ -471,8 +471,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 195);
         assert_eq!(perft(&startpos, 3), 2760);
         assert_eq!(perft(&startpos, 4), 38675);
-        assert_eq!(perft(&startpos, 5), 570726);
-        assert_eq!(perft(&startpos, 6), 8107539);
+        assert_eq!(perft(&startpos, 5), 570_726);
+        assert_eq!(perft(&startpos, 6), 8_107_539);
     }
 
     #[test]
@@ -482,8 +482,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 156);
         assert_eq!(perft(&startpos, 3), 1636);
         assert_eq!(perft(&startpos, 4), 20534);
-        assert_eq!(perft(&startpos, 5), 223507);
-        assert_eq!(perft(&startpos, 6), 2594412);
+        assert_eq!(perft(&startpos, 5), 223_507);
+        assert_eq!(perft(&startpos, 6), 2_594_412);
     }
 
     #[test]
@@ -493,8 +493,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 289);
         assert_eq!(perft(&startpos, 3), 4442);
         assert_eq!(perft(&startpos, 4), 73584);
-        assert_eq!(perft(&startpos, 5), 1198299);
-        assert_eq!(perft(&startpos, 6), 19870403);
+        assert_eq!(perft(&startpos, 5), 1_198_299);
+        assert_eq!(perft(&startpos, 6), 19_870_403);
     }
 
     #[test]
@@ -505,7 +505,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 345);
         assert_eq!(perft(&startpos, 4), 5301);
         assert_eq!(perft(&startpos, 5), 38348);
-        assert_eq!(perft(&startpos, 6), 588695);
+        assert_eq!(perft(&startpos, 6), 588_695);
     }
 
     #[test]
@@ -516,7 +516,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 835);
         assert_eq!(perft(&startpos, 4), 5910);
         assert_eq!(perft(&startpos, 5), 92250);
-        assert_eq!(perft(&startpos, 6), 688780);
+        assert_eq!(perft(&startpos, 6), 688_780);
     }
 
     #[test]
@@ -526,8 +526,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 193);
         assert_eq!(perft(&startpos, 3), 2816);
         assert_eq!(perft(&startpos, 4), 40039);
-        assert_eq!(perft(&startpos, 5), 582642);
-        assert_eq!(perft(&startpos, 6), 8503277);
+        assert_eq!(perft(&startpos, 5), 582_642);
+        assert_eq!(perft(&startpos, 6), 8_503_277);
     }
 
     #[test]
@@ -537,8 +537,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 180);
         assert_eq!(perft(&startpos, 3), 2290);
         assert_eq!(perft(&startpos, 4), 24640);
-        assert_eq!(perft(&startpos, 5), 288141);
-        assert_eq!(perft(&startpos, 6), 3147566);
+        assert_eq!(perft(&startpos, 5), 288_141);
+        assert_eq!(perft(&startpos, 6), 3_147_566);
     }
 
     #[test]
@@ -548,8 +548,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 68);
         assert_eq!(perft(&startpos, 3), 1118);
         assert_eq!(perft(&startpos, 4), 16199);
-        assert_eq!(perft(&startpos, 5), 281190);
-        assert_eq!(perft(&startpos, 6), 4405103);
+        assert_eq!(perft(&startpos, 5), 281_190);
+        assert_eq!(perft(&startpos, 6), 4_405_103);
     }
 
     #[test]
@@ -560,7 +560,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 835);
         assert_eq!(perft(&startpos, 4), 5910);
         assert_eq!(perft(&startpos, 5), 92250);
-        assert_eq!(perft(&startpos, 6), 688780);
+        assert_eq!(perft(&startpos, 6), 688_780);
     }
 
     #[test]
@@ -571,7 +571,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 345);
         assert_eq!(perft(&startpos, 4), 5301);
         assert_eq!(perft(&startpos, 5), 38348);
-        assert_eq!(perft(&startpos, 6), 588695);
+        assert_eq!(perft(&startpos, 6), 588_695);
     }
 
     #[test]
@@ -581,8 +581,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 278);
         assert_eq!(perft(&startpos, 3), 4607);
         assert_eq!(perft(&startpos, 4), 76778);
-        assert_eq!(perft(&startpos, 5), 1320507);
-        assert_eq!(perft(&startpos, 6), 22823890);
+        assert_eq!(perft(&startpos, 5), 1_320_507);
+        assert_eq!(perft(&startpos, 6), 22_823_890);
     }
 
     #[test]
@@ -592,8 +592,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 316);
         assert_eq!(perft(&startpos, 3), 5744);
         assert_eq!(perft(&startpos, 4), 93338);
-        assert_eq!(perft(&startpos, 5), 1713368);
-        assert_eq!(perft(&startpos, 6), 28861171);
+        assert_eq!(perft(&startpos, 5), 1_713_368);
+        assert_eq!(perft(&startpos, 6), 28_861_171);
     }
 
     #[test]
@@ -603,8 +603,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 144);
         assert_eq!(perft(&startpos, 3), 3242);
         assert_eq!(perft(&startpos, 4), 32955);
-        assert_eq!(perft(&startpos, 5), 787524);
-        assert_eq!(perft(&startpos, 6), 7881673);
+        assert_eq!(perft(&startpos, 5), 787_524);
+        assert_eq!(perft(&startpos, 6), 7_881_673);
     }
 
     #[test]
@@ -614,8 +614,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 143);
         assert_eq!(perft(&startpos, 3), 1416);
         assert_eq!(perft(&startpos, 4), 31787);
-        assert_eq!(perft(&startpos, 5), 310862);
-        assert_eq!(perft(&startpos, 6), 7382896);
+        assert_eq!(perft(&startpos, 5), 310_862);
+        assert_eq!(perft(&startpos, 6), 7_382_896);
     }
 
     #[test]
@@ -625,8 +625,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 106);
         assert_eq!(perft(&startpos, 3), 1829);
         assert_eq!(perft(&startpos, 4), 31151);
-        assert_eq!(perft(&startpos, 5), 530585);
-        assert_eq!(perft(&startpos, 6), 9250746);
+        assert_eq!(perft(&startpos, 5), 530_585);
+        assert_eq!(perft(&startpos, 6), 9_250_746);
     }
 
     #[test]
@@ -636,8 +636,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 309);
         assert_eq!(perft(&startpos, 3), 5133);
         assert_eq!(perft(&startpos, 4), 93603);
-        assert_eq!(perft(&startpos, 5), 1591064);
-        assert_eq!(perft(&startpos, 6), 29027891);
+        assert_eq!(perft(&startpos, 5), 1_591_064);
+        assert_eq!(perft(&startpos, 6), 29_027_891);
     }
 
     #[test]
@@ -647,8 +647,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 143);
         assert_eq!(perft(&startpos, 3), 1416);
         assert_eq!(perft(&startpos, 4), 31787);
-        assert_eq!(perft(&startpos, 5), 310862);
-        assert_eq!(perft(&startpos, 6), 7382896);
+        assert_eq!(perft(&startpos, 5), 310_862);
+        assert_eq!(perft(&startpos, 6), 7_382_896);
     }
 
     #[test]
@@ -658,8 +658,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 144);
         assert_eq!(perft(&startpos, 3), 3242);
         assert_eq!(perft(&startpos, 4), 32955);
-        assert_eq!(perft(&startpos, 5), 787524);
-        assert_eq!(perft(&startpos, 6), 7881673);
+        assert_eq!(perft(&startpos, 5), 787_524);
+        assert_eq!(perft(&startpos, 6), 7_881_673);
     }
 
     #[test]
@@ -668,9 +668,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 19);
         assert_eq!(perft(&startpos, 2), 275);
         assert_eq!(perft(&startpos, 3), 5300);
-        assert_eq!(perft(&startpos, 4), 104342);
-        assert_eq!(perft(&startpos, 5), 2161211);
-        assert_eq!(perft(&startpos, 6), 44956585);
+        assert_eq!(perft(&startpos, 4), 104_342);
+        assert_eq!(perft(&startpos, 5), 2_161_211);
+        assert_eq!(perft(&startpos, 6), 44_956_585);
     }
 
     #[test]
@@ -679,9 +679,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 36);
         assert_eq!(perft(&startpos, 2), 1027);
         assert_eq!(perft(&startpos, 3), 29215);
-        assert_eq!(perft(&startpos, 4), 771461);
-        assert_eq!(perft(&startpos, 5), 20506480);
-        assert_eq!(perft(&startpos, 6), 525169084);
+        assert_eq!(perft(&startpos, 4), 771_461);
+        assert_eq!(perft(&startpos, 5), 20_506_480);
+        assert_eq!(perft(&startpos, 6), 525_169_084);
     }
 
     #[test]
@@ -690,9 +690,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 19);
         assert_eq!(perft(&startpos, 2), 275);
         assert_eq!(perft(&startpos, 3), 5300);
-        assert_eq!(perft(&startpos, 4), 104342);
-        assert_eq!(perft(&startpos, 5), 2161211);
-        assert_eq!(perft(&startpos, 6), 44956585);
+        assert_eq!(perft(&startpos, 4), 104_342);
+        assert_eq!(perft(&startpos, 5), 2_161_211);
+        assert_eq!(perft(&startpos, 6), 44_956_585);
     }
 
     #[test]
@@ -701,9 +701,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 36);
         assert_eq!(perft(&startpos, 2), 1027);
         assert_eq!(perft(&startpos, 3), 29227);
-        assert_eq!(perft(&startpos, 4), 771368);
-        assert_eq!(perft(&startpos, 5), 20521342);
-        assert_eq!(perft(&startpos, 6), 524966748);
+        assert_eq!(perft(&startpos, 4), 771_368);
+        assert_eq!(perft(&startpos, 5), 20_521_342);
+        assert_eq!(perft(&startpos, 6), 524_966_748);
     }
 
     #[test]
@@ -714,7 +714,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 143);
         assert_eq!(perft(&startpos, 4), 3637);
         assert_eq!(perft(&startpos, 5), 14893);
-        assert_eq!(perft(&startpos, 6), 391507);
+        assert_eq!(perft(&startpos, 6), 391_507);
     }
 
     #[test]
@@ -725,7 +725,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 143);
         assert_eq!(perft(&startpos, 4), 3637);
         assert_eq!(perft(&startpos, 5), 14893);
-        assert_eq!(perft(&startpos, 6), 391507);
+        assert_eq!(perft(&startpos, 6), 391_507);
     }
 
     #[test]
@@ -735,8 +735,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 35);
         assert_eq!(perft(&startpos, 3), 495);
         assert_eq!(perft(&startpos, 4), 8349);
-        assert_eq!(perft(&startpos, 5), 166741);
-        assert_eq!(perft(&startpos, 6), 3370175);
+        assert_eq!(perft(&startpos, 5), 166_741);
+        assert_eq!(perft(&startpos, 6), 3_370_175);
     }
 
     #[test]
@@ -746,8 +746,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 43);
         assert_eq!(perft(&startpos, 3), 1015);
         assert_eq!(perft(&startpos, 4), 4167);
-        assert_eq!(perft(&startpos, 5), 105749);
-        assert_eq!(perft(&startpos, 6), 419369);
+        assert_eq!(perft(&startpos, 5), 105_749);
+        assert_eq!(perft(&startpos, 6), 419_369);
     }
 
     #[test]
@@ -758,7 +758,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 143);
         assert_eq!(perft(&startpos, 4), 3637);
         assert_eq!(perft(&startpos, 5), 14893);
-        assert_eq!(perft(&startpos, 6), 391507);
+        assert_eq!(perft(&startpos, 6), 391_507);
     }
 
     #[test]
@@ -768,8 +768,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 35);
         assert_eq!(perft(&startpos, 3), 495);
         assert_eq!(perft(&startpos, 4), 8349);
-        assert_eq!(perft(&startpos, 5), 166741);
-        assert_eq!(perft(&startpos, 6), 3370175);
+        assert_eq!(perft(&startpos, 5), 166_741);
+        assert_eq!(perft(&startpos, 6), 3_370_175);
     }
 
     #[test]
@@ -945,7 +945,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 483);
         assert_eq!(perft(&startpos, 4), 3213);
         assert_eq!(perft(&startpos, 5), 23599);
-        assert_eq!(perft(&startpos, 6), 157093);
+        assert_eq!(perft(&startpos, 6), 157_093);
     }
 
     #[test]
@@ -956,7 +956,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 411);
         assert_eq!(perft(&startpos, 4), 3213);
         assert_eq!(perft(&startpos, 5), 21637);
-        assert_eq!(perft(&startpos, 6), 158065);
+        assert_eq!(perft(&startpos, 6), 158_065);
     }
 
     #[test]
@@ -1011,7 +1011,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 411);
         assert_eq!(perft(&startpos, 4), 3213);
         assert_eq!(perft(&startpos, 5), 21637);
-        assert_eq!(perft(&startpos, 6), 158065);
+        assert_eq!(perft(&startpos, 6), 158_065);
     }
 
     #[test]
@@ -1022,7 +1022,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 483);
         assert_eq!(perft(&startpos, 4), 3213);
         assert_eq!(perft(&startpos, 5), 23599);
-        assert_eq!(perft(&startpos, 6), 157093);
+        assert_eq!(perft(&startpos, 6), 157_093);
     }
 
     #[test]
@@ -1286,7 +1286,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 378);
         assert_eq!(perft(&startpos, 4), 2902);
         assert_eq!(perft(&startpos, 5), 24122);
-        assert_eq!(perft(&startpos, 6), 199002);
+        assert_eq!(perft(&startpos, 6), 199_002);
     }
 
     #[test]
@@ -1363,7 +1363,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 378);
         assert_eq!(perft(&startpos, 4), 2902);
         assert_eq!(perft(&startpos, 5), 24122);
-        assert_eq!(perft(&startpos, 6), 199002);
+        assert_eq!(perft(&startpos, 6), 199_002);
     }
 
     #[test]
@@ -1374,7 +1374,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 887);
         assert_eq!(perft(&startpos, 4), 8048);
         assert_eq!(perft(&startpos, 5), 90606);
-        assert_eq!(perft(&startpos, 6), 1030499);
+        assert_eq!(perft(&startpos, 6), 1_030_499);
     }
 
     #[test]
@@ -1383,9 +1383,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 24);
         assert_eq!(perft(&startpos, 2), 421);
         assert_eq!(perft(&startpos, 3), 7421);
-        assert_eq!(perft(&startpos, 4), 124608);
-        assert_eq!(perft(&startpos, 5), 2193768);
-        assert_eq!(perft(&startpos, 6), 37665329);
+        assert_eq!(perft(&startpos, 4), 124_608);
+        assert_eq!(perft(&startpos, 5), 2_193_768);
+        assert_eq!(perft(&startpos, 6), 37_665_329);
     }
 
     #[test]
@@ -1395,8 +1395,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 270);
         assert_eq!(perft(&startpos, 3), 4699);
         assert_eq!(perft(&startpos, 4), 79355);
-        assert_eq!(perft(&startpos, 5), 1533145);
-        assert_eq!(perft(&startpos, 6), 28859283);
+        assert_eq!(perft(&startpos, 5), 1_533_145);
+        assert_eq!(perft(&startpos, 6), 28_859_283);
     }
 
     #[test]
@@ -1405,9 +1405,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 24);
         assert_eq!(perft(&startpos, 2), 496);
         assert_eq!(perft(&startpos, 3), 9483);
-        assert_eq!(perft(&startpos, 4), 182838);
-        assert_eq!(perft(&startpos, 5), 3605103);
-        assert_eq!(perft(&startpos, 6), 71179139);
+        assert_eq!(perft(&startpos, 4), 182_838);
+        assert_eq!(perft(&startpos, 5), 3_605_103);
+        assert_eq!(perft(&startpos, 6), 71_179_139);
     }
 
     #[test]
@@ -1418,7 +1418,7 @@ mod perft {
         assert_eq!(perft(&startpos, 3), 887);
         assert_eq!(perft(&startpos, 4), 8048);
         assert_eq!(perft(&startpos, 5), 90606);
-        assert_eq!(perft(&startpos, 6), 1030499);
+        assert_eq!(perft(&startpos, 6), 1_030_499);
     }
 
     #[test]
@@ -1427,9 +1427,9 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 24);
         assert_eq!(perft(&startpos, 2), 421);
         assert_eq!(perft(&startpos, 3), 7421);
-        assert_eq!(perft(&startpos, 4), 124608);
-        assert_eq!(perft(&startpos, 5), 2193768);
-        assert_eq!(perft(&startpos, 6), 37665329);
+        assert_eq!(perft(&startpos, 4), 124_608);
+        assert_eq!(perft(&startpos, 5), 2_193_768);
+        assert_eq!(perft(&startpos, 6), 37_665_329);
     }
 
     #[test]
@@ -1439,8 +1439,8 @@ mod perft {
         assert_eq!(perft(&startpos, 2), 270);
         assert_eq!(perft(&startpos, 3), 4699);
         assert_eq!(perft(&startpos, 4), 79355);
-        assert_eq!(perft(&startpos, 5), 1533145);
-        assert_eq!(perft(&startpos, 6), 28859283);
+        assert_eq!(perft(&startpos, 5), 1_533_145);
+        assert_eq!(perft(&startpos, 6), 28_859_283);
     }
 
     #[test]
@@ -1449,8 +1449,8 @@ mod perft {
         assert_eq!(perft(&startpos, 1), 24);
         assert_eq!(perft(&startpos, 2), 496);
         assert_eq!(perft(&startpos, 3), 9483);
-        assert_eq!(perft(&startpos, 4), 182838);
-        assert_eq!(perft(&startpos, 5), 3605103);
-        assert_eq!(perft(&startpos, 6), 71179139);
+        assert_eq!(perft(&startpos, 4), 182_838);
+        assert_eq!(perft(&startpos, 5), 3_605_103);
+        assert_eq!(perft(&startpos, 6), 71_179_139);
     }
 }
