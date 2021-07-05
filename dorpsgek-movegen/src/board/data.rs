@@ -47,12 +47,6 @@ impl BoardData {
         }
     }
 
-    #[doc(hidden)]
-    #[allow(dead_code)]
-    pub fn bitlists(&self) -> BitlistArray {
-        self.bitlist.clone()
-    }
-
     /// Return the piece index on a square, if any.
     pub fn piece_index(&self, square: Square) -> Option<PieceIndex> {
         self.index[square]

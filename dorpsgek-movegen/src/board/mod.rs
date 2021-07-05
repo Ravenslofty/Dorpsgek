@@ -544,62 +544,6 @@ impl Board {
         }
     }
 
-    /// Generate king-specific moves.
-    fn generate_king_quiet(&self, v: &mut ArrayVec<[Move; 256]>, pininfo: &PinInfo) {
-        if let Some(piece_index) = (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek()
-        {
-            let square = self.data.square_of_piece(piece_index);
-
-            // King moves.
-            for dest in square.king_attacks() {
-                if self.data.has_piece(dest) {
-                    continue;
-                }
-
-                // It's illegal for kings to move to attacked squares; prune those out.
-                if !self.data.attacks_to(dest, !self.side).empty() {
-                    continue;
-                }
-
-                self.try_push_move(v, square, dest, MoveType::Normal, None, pininfo);
-            }
-
-            // Kingside castling.
-            if (self.side == Colour::White && self.castle.0)
-                || (self.side == Colour::Black && self.castle.2)
-            {
-                let east1 = square.east().unwrap();
-                let east2 = east1.east().unwrap();
-                if self.data.attacks_to(square, !self.side).empty()
-                    && !self.data.has_piece(east1)
-                    && self.data.attacks_to(east1, !self.side).empty()
-                    && !self.data.has_piece(east2)
-                    && self.data.attacks_to(east2, !self.side).empty()
-                {
-                    self.try_push_move(v, square, east2, MoveType::Castle, None, pininfo);
-                }
-            }
-
-            // Queenside castling.
-            if (self.side == Colour::White && self.castle.1)
-                || (self.side == Colour::Black && self.castle.3)
-            {
-                let west1 = square.west().unwrap();
-                let west2 = west1.west().unwrap();
-                let west3 = west2.west().unwrap();
-                if self.data.attacks_to(square, !self.side).empty()
-                    && !self.data.has_piece(west1)
-                    && self.data.attacks_to(west1, !self.side).empty()
-                    && !self.data.has_piece(west2)
-                    && self.data.attacks_to(west2, !self.side).empty()
-                    && !self.data.has_piece(west3)
-                {
-                    self.try_push_move(v, square, west2, MoveType::Castle, None, pininfo);
-                }
-            }
-        }
-    }
-
     /// Generate moves when in check by a single piece.
     #[allow(clippy::too_many_lines)]
     fn generate_single_check(&self, v: &mut ArrayVec<[Move; 256]>) {
@@ -857,6 +801,9 @@ impl Board {
     }
 
     /// Generate a vector of moves on the board.
+    ///
+    /// # Panics
+    /// Panics when Lofty writes shitty code.
     #[allow(clippy::missing_inline_in_public_items)]
     pub fn generate(&self, v: &mut ArrayVec<[Move; 256]>) {
         // Unless something has gone very badly wrong we have to have a king.
@@ -886,9 +833,6 @@ impl Board {
             self.generate_pawn_quiet(v, from, &pininfo);
         }
 
-        // King.
-        self.generate_king_quiet(v, &pininfo);
-
         // General quiet move loop; pawns and kings handled separately.
         for dest in 0_u8..64 {
             // Squares will always be in range, so this will never panic.
@@ -904,10 +848,49 @@ impl Board {
                 .data
                 .attacks_to(dest, self.side)
                 .and(!self.data.pawns())
-                .and(!self.data.kings())
+                //.and(!self.data.kings())
             {
+                // It's illegal for kings to move to attacked squares; prune those out.
+                if self.data.piece_from_bit(attacker) == Piece::King && !self.data.attacks_to(dest, !self.side).empty() {
+                    continue;
+                }
+
                 let from = self.data.square_of_piece(attacker);
                 self.try_push_move(v, from, dest, MoveType::Normal, None, &pininfo);
+            }
+        }
+
+        // Kingside castling.
+        if (self.side == Colour::White && self.castle.0)
+            || (self.side == Colour::Black && self.castle.2)
+        {
+            let east1 = king_square.east().unwrap();
+            let east2 = east1.east().unwrap();
+            if self.data.attacks_to(king_square, !self.side).empty()
+                && !self.data.has_piece(east1)
+                && self.data.attacks_to(east1, !self.side).empty()
+                && !self.data.has_piece(east2)
+                && self.data.attacks_to(east2, !self.side).empty()
+            {
+                self.try_push_move(v, king_square, east2, MoveType::Castle, None, &pininfo);
+            }
+        }
+
+        // Queenside castling.
+        if (self.side == Colour::White && self.castle.1)
+            || (self.side == Colour::Black && self.castle.3)
+        {
+            let west1 = king_square.west().unwrap();
+            let west2 = west1.west().unwrap();
+            let west3 = west2.west().unwrap();
+            if self.data.attacks_to(king_square, !self.side).empty()
+                && !self.data.has_piece(west1)
+                && self.data.attacks_to(west1, !self.side).empty()
+                && !self.data.has_piece(west2)
+                && self.data.attacks_to(west2, !self.side).empty()
+                && !self.data.has_piece(west3)
+            {
+                self.try_push_move(v, king_square, west2, MoveType::Castle, None, &pininfo);
             }
         }
     }
