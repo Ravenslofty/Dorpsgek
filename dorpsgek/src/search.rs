@@ -37,8 +37,7 @@ impl Search {
         let moves: [Move; 256] = [Move::default(); 256];
         let mut moves = ArrayVec::from(moves);
         moves.set_len(0);
-        let (pinned, enpassant_pinned) = board.generate_pinned_pieces(&mut moves);
-        board.generate_captures(&mut moves, pinned, enpassant_pinned);
+        board.generate_captures(&mut moves);
 
         for m in moves {
             if !m.is_capture() {

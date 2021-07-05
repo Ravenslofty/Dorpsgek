@@ -28,6 +28,8 @@ use std::{
 pub struct PieceIndex(NonZeroU8);
 
 impl PieceIndex {
+    /// # Safety
+    /// `x` must be in the range 0-63.
     #[must_use]
     pub const unsafe fn new_unchecked(x: u8) -> Self {
         Self(NonZeroU8::new_unchecked(x + 1))
