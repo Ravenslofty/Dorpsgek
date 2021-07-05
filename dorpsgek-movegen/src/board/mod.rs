@@ -604,6 +604,29 @@ impl Board {
         }
     }
 
+    /// Generate en-passant pawn moves.
+    fn generate_pawn_enpassant(
+        &self,
+        v: &mut ArrayVec<[Move; 256]>,
+        dir: Option<Direction>,
+        pinned: Bitlist,
+        enpassant_pinned: Bitlist
+    ) {
+        if let Some(ep) = self.ep {
+            for capturer in self.data.attacks_to(ep, self.side).and(self.data.pawns()).and(!pinned).and(!enpassant_pinned) {
+                let from = self.data.square_of_piece(capturer);
+                if let Some(dir) = dir {
+                    if let Some(move_dir) = from.direction(ep) {
+                        if dir != move_dir && dir != move_dir.opposite() {
+                            continue;
+                        }
+                    }
+                }
+                v.push(Move::new(from, ep, MoveType::EnPassant, None));
+            }
+        }
+    }
+
     /// Generate pawn-specific quiet moves.
     fn generate_pawn_quiet(
         &self,
@@ -649,26 +672,6 @@ impl Board {
                     }
                 }
             }
-        }
-    }
-
-    /// Generate pawn-specific moves.
-    fn generate_pawns(
-        &self,
-        v: &mut ArrayVec<[Move; 256]>,
-        pinned: Bitlist,
-        enpassant_pinned: Bitlist,
-    ) {
-        for pawn in self
-            .data
-            .pawns()
-            .and(Bitlist::mask_from_colour(self.side))
-            .and(!pinned)
-            .and(!enpassant_pinned)
-        {
-            let from = self.data.square_of_piece(pawn);
-            self.generate_pawn_captures(v, from, None, false);
-            self.generate_pawn_quiet(v, from, None);
         }
     }
 
@@ -975,19 +978,19 @@ impl Board {
 
         let (pinned, enpassant_pinned) = self.generate_pinned_pieces(v);
 
-        // Pawns.
-        self.generate_pawns(v, pinned, enpassant_pinned);
-
         let mut find_attackers = |dest: Square| {
             let attacks = self.data.attacks_to(dest, self.side);
-            /*for capturer in attacks & self.data.pawns() & !pinned {
+            for capturer in attacks & self.data.pawns() & !pinned {
                 let from = self.data.square_of_piece(capturer);
                 if Rank::from(dest).is_relative_eighth(self.side) {
-
+                    v.push(Move::new(from, dest, MoveType::CapturePromotion, Some(Piece::Queen)));
+                    v.push(Move::new(from, dest, MoveType::CapturePromotion, Some(Piece::Knight)));
+                    v.push(Move::new(from, dest, MoveType::CapturePromotion, Some(Piece::Rook)));
+                    v.push(Move::new(from, dest, MoveType::CapturePromotion, Some(Piece::Bishop)));
                 } else {
                     v.push(Move::new(from, dest, MoveType::Capture, None));
                 }
-            }*/
+            }
             for capturer in attacks & self.data.knights() & !pinned {
                 let from = self.data.square_of_piece(capturer);
                 v.push(Move::new(from, dest, MoveType::Capture, None));
@@ -1020,6 +1023,20 @@ impl Board {
         }
         for victim in self.data.pieces_of_colour(!self.side) & self.data.pawns() {
             find_attackers(self.square_of_piece(victim));
+        }
+
+        self.generate_pawn_enpassant(v, None, pinned, enpassant_pinned);
+
+        // Pawns.
+        for pawn in self
+            .data
+            .pawns()
+            .and(Bitlist::mask_from_colour(self.side))
+            .and(!pinned)
+            .and(!enpassant_pinned)
+        {
+            let from = self.data.square_of_piece(pawn);
+            self.generate_pawn_quiet(v, from, None);
         }
 
         // King.
