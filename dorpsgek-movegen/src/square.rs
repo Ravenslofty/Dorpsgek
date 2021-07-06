@@ -758,24 +758,26 @@ pub enum Direction {
 impl Direction {
     /// The `Direction` 180 degrees of the given `Direction`.
     pub const fn opposite(self) -> Self {
-        match self {
-            Self::North => Self::South,
-            Self::NorthEast => Self::SouthWest,
-            Self::East => Self::West,
-            Self::SouthEast => Self::NorthWest,
-            Self::South => Self::North,
-            Self::SouthWest => Self::NorthEast,
-            Self::West => Self::East,
-            Self::NorthWest => Self::SouthEast,
-            Self::NorthNorthEast => Self::SouthSouthWest,
-            Self::EastNorthEast => Self::WestSouthWest,
-            Self::EastSouthEast => Self::WestNorthWest,
-            Self::SouthSouthEast => Self::NorthNorthWest,
-            Self::SouthSouthWest => Self::NorthNorthEast,
-            Self::WestSouthWest => Self::EastNorthEast,
-            Self::WestNorthWest => Self::EastSouthEast,
-            Self::NorthNorthWest => Self::SouthSouthEast,
-        }
+        const OPPOSITE: [Direction; 16] = [
+            Direction::South,
+            Direction::SouthSouthWest,
+            Direction::SouthWest,
+            Direction::WestSouthWest,
+            Direction::West,
+            Direction::WestNorthWest,
+            Direction::NorthWest,
+            Direction::NorthNorthWest,
+            Direction::North,
+            Direction::NorthNorthEast,
+            Direction::NorthEast,
+            Direction::EastNorthEast,
+            Direction::East,
+            Direction::EastSouthEast,
+            Direction::SouthEast,
+            Direction::SouthSouthEast,
+        ];
+
+        OPPOSITE[self as usize]
     }
 
     /// Returns true if the direction is diagonal.
