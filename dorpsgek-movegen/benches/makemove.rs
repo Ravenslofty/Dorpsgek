@@ -1,8 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
-use criterion_cpu_time::PosixTime;
 use dorpsgek_movegen::{perft, Board, Move, MoveType, Square};
 
-pub fn makemove_bench(c: &mut Criterion<PosixTime>) {
+pub fn makemove_bench(c: &mut Criterion) {
     let startpos =
         Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     let kiwipete =
@@ -44,7 +43,7 @@ pub fn makemove_bench(c: &mut Criterion<PosixTime>) {
     group.finish();
 }
 
-pub fn perft_bench(c: &mut Criterion<PosixTime>) {
+pub fn perft_bench(c: &mut Criterion) {
     let board =
         Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
 
@@ -126,14 +125,14 @@ pub fn perft_bench(c: &mut Criterion<PosixTime>) {
     group.finish();
 }
 
-pub fn bench(c: &mut Criterion<PosixTime>) {
+pub fn bench(c: &mut Criterion) {
     makemove_bench(c);
     perft_bench(c);
 }
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().with_measurement(PosixTime::UserTime);
+    config = Criterion::default();
     targets = bench
 }
 

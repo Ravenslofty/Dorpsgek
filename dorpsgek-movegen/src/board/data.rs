@@ -235,8 +235,8 @@ impl BoardData {
                      index: &PieceIndexArray,
                      dir: Direction,
                      square: Square| {
-            if let Some(slide_dir) = skip_dir {
-                if slide_dir == dir || slide_dir == dir.opposite() {
+            if let Some(skip_dir) = skip_dir {
+                if skip_dir == dir || skip_dir == dir.opposite() {
                     return;
                 }
             }

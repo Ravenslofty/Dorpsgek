@@ -9,7 +9,7 @@ fn main() {
             .unwrap();
     let mut s = Search::new();
     let start = Instant::now();
-    for depth in 1..=8 {
+    for depth in 1..=9 {
         let score = s.search(&board, depth, -100_000, 100_000);
         let now = Instant::now().duration_since(start);
         println!(
@@ -21,7 +21,7 @@ fn main() {
         );
     }
     println!(
-        "# QS%: {:.3}",
-        s.qnodes() as f64 / (s.nodes() as f64 + s.qnodes() as f64)
+        "# QS: {:.3}%",
+        (100 * s.qnodes()) as f64 / (s.nodes() as f64 + s.qnodes() as f64)
     );
 }

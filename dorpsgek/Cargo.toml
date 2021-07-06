@@ -9,3 +9,10 @@ edition = "2018"
 [dependencies]
 dorpsgek-movegen = { path = "../dorpsgek-movegen" }
 tinyvec = "0.3"
+
+[dev-dependencies]
+criterion = { version = "0.3", features = ["real_blackbox"]}
+
+[[bench]]
+name = "search"
+harness = false

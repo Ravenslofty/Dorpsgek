@@ -12,7 +12,6 @@ once_cell = "1.4"
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["real_blackbox"]}
-criterion-cpu-time = "0.1.0"
 rayon = "1.5.1"
 
 [[bench]]
