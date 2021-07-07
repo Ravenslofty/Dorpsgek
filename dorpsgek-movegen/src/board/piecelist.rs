@@ -34,7 +34,8 @@ impl Piecelist {
     /// Panics if `piece_index` does not have a square, since `PieceIndex` implies a valid piece.
     pub fn get(&self, piece_index: PieceIndex) -> Square {
         let piece_index = usize::from(piece_index.into_inner());
-        self.0[piece_index].expect("valid piece index has invalid square")
+        self.0[piece_index].unwrap_or(unsafe { Square::from_u8_unchecked(0) })
+        //self.0[piece_index].expect("valid piece index has invalid square")
     }
 
     /// Add a piece to the board.
