@@ -177,7 +177,7 @@ impl Iterator for BitlistIter {
 
 /// The main attack table array.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 #[repr(transparent)]
 pub struct BitlistArray([Bitlist; 64]);
 
@@ -192,20 +192,6 @@ impl Debug for BitlistArray {
             }
         }
         Ok(())
-    }
-}
-
-impl PartialEq for BitlistArray {
-    fn eq(&self, other: &Self) -> bool {
-        for square in 0_u8..64 {
-            #[allow(clippy::unwrap_used)]
-            let square = Square::try_from(square).unwrap();
-
-            if self[square] != other[square] {
-                return false;
-            }
-        }
-        true
     }
 }
 
