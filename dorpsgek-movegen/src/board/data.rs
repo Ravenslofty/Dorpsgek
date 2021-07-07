@@ -151,11 +151,7 @@ impl BoardData {
     }
 
     /// Move a piece from a square to another square.
-    pub fn move_piece(
-        &mut self,
-        from_square: Square,
-        to_square: Square
-    ) {
+    pub fn move_piece(&mut self, from_square: Square, to_square: Square) {
         let piece_index =
             self.index[from_square].expect("attempted to move piece from empty square");
         let piece = self.piece_from_bit(piece_index);
