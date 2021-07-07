@@ -154,8 +154,7 @@ impl BoardData {
     pub fn move_piece(
         &mut self,
         from_square: Square,
-        to_square: Square,
-        update: bool
+        to_square: Square
     ) {
         let piece_index =
             self.index[from_square].expect("attempted to move piece from empty square");
@@ -168,24 +167,20 @@ impl BoardData {
             }
         });
 
-        if update {
-            self.update_attacks(from_square, piece_index, piece, false, slide_dir);
-            self.update_sliders(from_square, true);
-            if slide_dir.is_some() {
-                self.bitlist.add_piece(from_square, piece_index);
-            }
+        self.update_attacks(from_square, piece_index, piece, false, slide_dir);
+        self.update_sliders(from_square, true);
+        if slide_dir.is_some() {
+            self.bitlist.add_piece(from_square, piece_index);
         }
 
         self.piecelist.move_piece(piece_index, to_square);
         self.index.move_piece(piece_index, from_square, to_square);
 
-        if update {
-            if slide_dir.is_some() {
-                self.bitlist.remove_piece(to_square, piece_index);
-            }
-            self.update_attacks(to_square, piece_index, piece, true, slide_dir);
-            self.update_sliders(to_square, false);
+        if slide_dir.is_some() {
+            self.bitlist.remove_piece(to_square, piece_index);
         }
+        self.update_attacks(to_square, piece_index, piece, true, slide_dir);
+        self.update_sliders(to_square, false);
 
         debug_assert!(
             !self.bitlist[to_square].contains(piece_index.into()),

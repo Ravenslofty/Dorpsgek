@@ -293,11 +293,11 @@ impl Board {
         let mut b = self.clone();
         match m.kind {
             MoveType::Normal => {
-                b.data.move_piece(m.from, m.dest, true);
+                b.data.move_piece(m.from, m.dest);
                 b.ep = None;
             }
             MoveType::DoublePush => {
-                b.data.move_piece(m.from, m.dest, true);
+                b.data.move_piece(m.from, m.dest);
                 b.ep = m.from.relative_north(b.side);
             }
             MoveType::Capture => {
@@ -306,27 +306,27 @@ impl Board {
                     .piece_index(m.dest)
                     .expect("attempted to capture an empty square");
                 b.data.remove_piece(piece_index, true);
-                b.data.move_piece(m.from, m.dest, true);
+                b.data.move_piece(m.from, m.dest);
                 b.ep = None;
             }
             MoveType::Castle => {
                 if m.dest > m.from {
                     let rook_from = m.dest.east().unwrap();
                     let rook_to = m.dest.west().unwrap();
-                    b.data.move_piece(rook_from, rook_to, true);
+                    b.data.move_piece(rook_from, rook_to);
                 } else {
                     let rook_from = m.dest.west().unwrap().west().unwrap();
                     let rook_to = m.dest.east().unwrap();
-                    b.data.move_piece(rook_from, rook_to, true);
+                    b.data.move_piece(rook_from, rook_to);
                 }
-                b.data.move_piece(m.from, m.dest, true);
+                b.data.move_piece(m.from, m.dest);
                 b.ep = None;
             }
             MoveType::EnPassant => {
                 let target_square = b.ep.unwrap().relative_south(b.side).unwrap();
                 let target_piece = b.data.piece_index(target_square).unwrap();
                 b.data.remove_piece(target_piece, true);
-                b.data.move_piece(m.from, m.dest, true);
+                b.data.move_piece(m.from, m.dest);
                 b.ep = None;
             }
             MoveType::Promotion => {
