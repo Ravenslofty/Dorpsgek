@@ -155,14 +155,13 @@ impl BoardData {
         &mut self,
         from_square: Square,
         to_square: Square,
-        update: bool,
-        quiet: bool,
+        update: bool
     ) {
         let piece_index =
             self.index[from_square].expect("attempted to move piece from empty square");
         let piece = self.piece_from_bit(piece_index);
         let slide_dir = from_square.direction(to_square).and_then(|dir| {
-            if matches!(piece, Piece::Bishop | Piece::Rook | Piece::Queen) && quiet {
+            if matches!(piece, Piece::Bishop | Piece::Rook | Piece::Queen) {
                 Some(dir)
             } else {
                 None
