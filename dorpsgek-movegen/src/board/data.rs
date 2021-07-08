@@ -131,7 +131,7 @@ impl BoardData {
         self.index.add_piece(piece_index, square);
 
         if update {
-            self.update_attacks(square, piece_index, piece, true, None);
+            self.update_attacks(square, piece_index, piece, true);
             self.update_sliders(square, false);
         }
     }
@@ -145,7 +145,7 @@ impl BoardData {
         self.index.remove_piece(piece_index, square);
 
         if update {
-            self.update_attacks(square, piece_index, piece, false, None);
+            self.update_attacks(square, piece_index, piece, false);
             self.update_sliders(square, true);
         }
     }
@@ -155,27 +155,14 @@ impl BoardData {
         let piece_index =
             self.index[from_square].expect("attempted to move piece from empty square");
         let piece = self.piece_from_bit(piece_index);
-        let slide_dir = from_square.direction(to_square).and_then(|dir| {
-            if matches!(piece, Piece::Bishop | Piece::Rook | Piece::Queen) {
-                Some(dir)
-            } else {
-                None
-            }
-        });
 
-        self.update_attacks(from_square, piece_index, piece, false, slide_dir);
+        self.update_attacks(from_square, piece_index, piece, false);
         self.update_sliders(from_square, true);
-        if slide_dir.is_some() {
-            self.bitlist.add_piece(from_square, piece_index);
-        }
 
         self.piecelist.move_piece(piece_index, to_square);
         self.index.move_piece(piece_index, from_square, to_square);
 
-        if slide_dir.is_some() {
-            self.bitlist.remove_piece(to_square, piece_index);
-        }
-        self.update_attacks(to_square, piece_index, piece, true, slide_dir);
+        self.update_attacks(to_square, piece_index, piece, true);
         self.update_sliders(to_square, false);
 
         debug_assert!(
@@ -198,20 +185,232 @@ impl BoardData {
             let square = unsafe { Square::from_u8_unchecked(square) };
             if let Some(bit) = self.index[square] {
                 let piece = self.piece_from_bit(bit);
-                self.update_attacks(square, bit, piece, true, None);
+                self.update_attacks(square, bit, piece, true);
             }
         }
     }
 
     /// Add or remove attacks for a square.
+    #[allow(clippy::too_many_lines)]
     fn update_attacks(
         &mut self,
         square: Square,
         bit: PieceIndex,
         piece: Piece,
         add: bool,
-        skip_dir: Option<Direction>,
     ) {
+        static DIRECTIONS: [Option<Direction>; 116] = [
+            // Knight @ 0
+            Some(Direction::NorthNorthEast),
+            Some(Direction::EastNorthEast),
+            Some(Direction::EastSouthEast),
+            Some(Direction::SouthSouthEast),
+            Some(Direction::SouthSouthWest),
+            Some(Direction::WestSouthWest),
+            Some(Direction::WestNorthWest),
+            Some(Direction::NorthNorthWest),
+            None,
+            // Bishop (normal) @ 0
+            Some(Direction::NorthEast),
+            Some(Direction::SouthEast),
+            Some(Direction::SouthWest),
+            Some(Direction::NorthWest),
+            None,
+            // Bishop (left edge) @ 5
+            Some(Direction::NorthEast),
+            Some(Direction::SouthEast),
+            None,
+            // Bishop (right edge) @ 8
+            Some(Direction::NorthWest),
+            Some(Direction::SouthWest),
+            None,
+            // Bishop (top edge) @ 11
+            Some(Direction::SouthEast),
+            Some(Direction::SouthWest),
+            None,
+            // Bishop (bottom edge) @ 14
+            Some(Direction::NorthEast),
+            Some(Direction::NorthWest),
+            None,
+            // Bishop (bottom left corner) @ 17
+            Some(Direction::NorthEast),
+            None,
+            // Bishop (bottom right corner) @ 19
+            Some(Direction::NorthWest),
+            None,
+            // Bishop (top left corner) @ 21
+            Some(Direction::SouthEast),
+            None,
+            // Bishop (top right corner) @ 23
+            Some(Direction::SouthWest),
+            None,
+            // Rook (normal) @ 0
+            Some(Direction::North),
+            Some(Direction::East),
+            Some(Direction::South),
+            Some(Direction::West),
+            None,
+            // Rook (left edge) @ 5
+            Some(Direction::North),
+            Some(Direction::East),
+            Some(Direction::South),
+            None,
+            // Rook (right edge) @ 9
+            Some(Direction::North),
+            Some(Direction::West),
+            Some(Direction::South),
+            None,
+            // Rook (top edge) @ 13
+            Some(Direction::East),
+            Some(Direction::West),
+            Some(Direction::South),
+            None,
+            // Rook (bottom edge) @ 17
+            Some(Direction::North),
+            Some(Direction::East),
+            Some(Direction::West),
+            None,
+            // Rook (bottom left corner) @ 21
+            Some(Direction::North),
+            Some(Direction::East),
+            None,
+            // Rook (bottom right corner) @ 24
+            Some(Direction::North),
+            Some(Direction::West),
+            None,
+            // Rook (top left corner) @ 27
+            Some(Direction::South),
+            Some(Direction::East),
+            None,
+            // Rook (top right corner) @ 30
+            Some(Direction::South),
+            Some(Direction::West),
+            None,
+            // Queen + King (normal) @ 0
+            Some(Direction::North),
+            Some(Direction::NorthEast),
+            Some(Direction::East),
+            Some(Direction::SouthEast),
+            Some(Direction::South),
+            Some(Direction::SouthWest),
+            Some(Direction::West),
+            Some(Direction::NorthWest),
+            None,
+            // Queen + King (left edge) @ 9
+            Some(Direction::North),
+            Some(Direction::NorthEast),
+            Some(Direction::East),
+            Some(Direction::SouthEast),
+            Some(Direction::South),
+            None,
+            // Queen + King (right edge) @ 15
+            Some(Direction::North),
+            Some(Direction::South),
+            Some(Direction::SouthWest),
+            Some(Direction::West),
+            Some(Direction::NorthWest),
+            None,
+            // Queen + King (top edge) @ 21
+            Some(Direction::East),
+            Some(Direction::SouthEast),
+            Some(Direction::South),
+            Some(Direction::SouthWest),
+            Some(Direction::West),
+            None,
+            // Queen + King (bottom edge) @ 27
+            Some(Direction::North),
+            Some(Direction::NorthEast),
+            Some(Direction::East),
+            Some(Direction::West),
+            Some(Direction::NorthWest),
+            None,
+            // Queen + King (bottom left corner) @ 33
+            Some(Direction::North),
+            Some(Direction::NorthEast),
+            Some(Direction::East),
+            None,
+            // Queen + King (bottom right corner) @ 37
+            Some(Direction::North),
+            Some(Direction::NorthWest),
+            Some(Direction::West),
+            None,
+            // Queen + King (top left corner) @ 41
+            Some(Direction::South),
+            Some(Direction::SouthEast),
+            Some(Direction::East),
+            None,
+            // Queen + King (top right corner) @ 45
+            Some(Direction::South),
+            Some(Direction::SouthWest),
+            Some(Direction::West),
+            None
+        ];
+
+        const KNIGHT_ATTACKS: usize = 9;
+        const BISHOP_ATTACKS: usize = 25;
+        const ROOK_ATTACKS: usize = 33;
+
+        static BASE: [usize; 6] = [
+            0,  // Pawn
+            0,  // Knight
+            KNIGHT_ATTACKS,  // Bishop
+            KNIGHT_ATTACKS + BISHOP_ATTACKS, // Rook
+            KNIGHT_ATTACKS + BISHOP_ATTACKS + ROOK_ATTACKS, // Queen
+            KNIGHT_ATTACKS + BISHOP_ATTACKS + ROOK_ATTACKS, // King
+        ];
+
+        #[rustfmt::skip]
+        static OFFSET: [[usize; 64]; 6] = [
+            // Pawn
+            [0; 64],
+            // Knight,
+            [0; 64],
+            // Bishop,
+            [
+                17, 14, 14, 14, 14, 14, 14, 19,
+                 5,  0,  0,  0,  0,  0,  0,  8,
+                 5,  0,  0,  0,  0,  0,  0,  8,
+                 5,  0,  0,  0,  0,  0,  0,  8,
+                 5,  0,  0,  0,  0,  0,  0,  8,
+                 5,  0,  0,  0,  0,  0,  0,  8,
+                 5,  0,  0,  0,  0,  0,  0,  8,
+                21, 11, 11, 11, 11, 11, 11, 23,
+            ],
+            // Rook,
+            [
+                21, 17, 17, 17, 17, 17, 17, 24,
+                 5,  0,  0,  0,  0,  0,  0,  9,
+                 5,  0,  0,  0,  0,  0,  0,  9,
+                 5,  0,  0,  0,  0,  0,  0,  9,
+                 5,  0,  0,  0,  0,  0,  0,  9,
+                 5,  0,  0,  0,  0,  0,  0,  9,
+                 5,  0,  0,  0,  0,  0,  0,  9,
+                27, 13, 13, 13, 13, 13, 13, 30,
+            ],
+            // Queen,
+            [
+                33, 27, 27, 27, 27, 27, 27, 37,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                41, 21, 21, 21, 21, 21, 21, 45,
+            ],
+            // King,
+            [
+                33, 27, 27, 27, 27, 27, 27, 37,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                 9,  0,  0,  0,  0,  0,  0, 15,
+                41, 21, 21, 21, 21, 21, 21, 45,
+            ],
+        ];
+
         let update = |bitlist: &mut BitlistArray, dest: Square| {
             if add {
                 debug_assert!(dest != square);
@@ -221,84 +420,28 @@ impl BoardData {
             }
         };
 
-        let slide = |bitlist: &mut BitlistArray,
-                     index: &PieceIndexArray,
-                     dir: Direction,
-                     square: Square| {
-            if let Some(skip_dir) = skip_dir {
-                if skip_dir == dir || skip_dir == dir.opposite() {
-                    return;
+        if piece == Piece::Pawn {
+            square.pawn_attacks(Colour::from(bit)).for_each(|dest| update(&mut self.bitlist, dest));
+        } else if matches!(piece, Piece::Knight | Piece::King) {
+            let mut offset = BASE[piece as usize] + OFFSET[piece as usize][square.into_inner() as usize];
+            while let Some(direction) = DIRECTIONS[offset] {
+                if let Some(dest) = square.travel(direction) {
+                    update(&mut self.bitlist, dest);
                 }
+                offset += 1;
             }
-
-            for dest in Square16x8::from_square(square).ray_attacks(dir) {
-                update(bitlist, dest);
-                if index[dest].is_some() {
-                    break;
+        } else {
+            let mut offset = BASE[piece as usize] + OFFSET[piece as usize][square.into_inner() as usize];
+            while let Some(direction) = DIRECTIONS[offset] {
+                for dest in Square16x8::from_square(square).ray_attacks(direction) {
+                    update(&mut self.bitlist, dest);
+                    if self.index[dest].is_some() {
+                        break;
+                    }
                 }
-            }
-        };
-
-        let leap = |b: &mut BitlistArray, dir: Direction, square: Square| {
-            if let Some(dest) = square.travel(dir) {
-                update(b, dest);
-            }
-        };
-
-        debug_assert!(
-            !self.bitlist[square].contains(bit.into()),
-            "{:?} on {} cannot attack itself",
-            self.piece_from_square(square),
-            square
-        );
-
-        match piece {
-            Piece::Pawn => square
-                .pawn_attacks(Colour::from(bit))
-                .for_each(|dest| update(&mut self.bitlist, dest)),
-            Piece::Knight => {
-                leap(&mut self.bitlist, Direction::NorthNorthEast, square);
-                leap(&mut self.bitlist, Direction::EastNorthEast, square);
-                leap(&mut self.bitlist, Direction::EastSouthEast, square);
-                leap(&mut self.bitlist, Direction::SouthSouthEast, square);
-                leap(&mut self.bitlist, Direction::SouthSouthWest, square);
-                leap(&mut self.bitlist, Direction::WestSouthWest, square);
-                leap(&mut self.bitlist, Direction::WestNorthWest, square);
-                leap(&mut self.bitlist, Direction::NorthNorthWest, square);
-            }
-            Piece::King => square
-                .king_attacks()
-                .for_each(|dest| update(&mut self.bitlist, dest)),
-            Piece::Bishop => {
-                slide(&mut self.bitlist, &self.index, Direction::NorthEast, square);
-                slide(&mut self.bitlist, &self.index, Direction::SouthEast, square);
-                slide(&mut self.bitlist, &self.index, Direction::SouthWest, square);
-                slide(&mut self.bitlist, &self.index, Direction::NorthWest, square);
-            }
-            Piece::Rook => {
-                slide(&mut self.bitlist, &self.index, Direction::North, square);
-                slide(&mut self.bitlist, &self.index, Direction::East, square);
-                slide(&mut self.bitlist, &self.index, Direction::South, square);
-                slide(&mut self.bitlist, &self.index, Direction::West, square);
-            }
-            Piece::Queen => {
-                slide(&mut self.bitlist, &self.index, Direction::North, square);
-                slide(&mut self.bitlist, &self.index, Direction::East, square);
-                slide(&mut self.bitlist, &self.index, Direction::South, square);
-                slide(&mut self.bitlist, &self.index, Direction::West, square);
-                slide(&mut self.bitlist, &self.index, Direction::NorthEast, square);
-                slide(&mut self.bitlist, &self.index, Direction::SouthEast, square);
-                slide(&mut self.bitlist, &self.index, Direction::SouthWest, square);
-                slide(&mut self.bitlist, &self.index, Direction::NorthWest, square);
+                offset += 1;
             }
         }
-
-        debug_assert!(
-            !self.bitlist[square].contains(bit.into()),
-            "{:?} on {} cannot attack itself",
-            self.piece_from_square(square),
-            square
-        );
     }
 
     /// Extend or remove slider attacks to a square.
