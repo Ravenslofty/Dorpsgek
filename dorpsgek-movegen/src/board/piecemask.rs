@@ -126,7 +126,7 @@ impl Piecemask {
     ///
     /// Panics if `piece_index` is not a valid piece.
     pub fn remove_piece(&mut self, piece_index: PieceIndex) {
-        assert!(
+        debug_assert!(
             self.occupied().contains(piece_index.into()),
             "attempted to remove invalid piece"
         );

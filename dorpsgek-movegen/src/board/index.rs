@@ -87,7 +87,7 @@ impl PieceIndexArray {
 
     /// Add a `PieceIndex` to a `Square`. Panics if the square is occupied.
     pub fn add_piece(&mut self, piece_index: PieceIndex, square: Square) {
-        assert!(
+        debug_assert!(
             self[square].is_none(),
             "attempted to add piece to occupied square"
         );
@@ -99,7 +99,7 @@ impl PieceIndexArray {
         match self[square] {
             None => panic!("attempted to remove piece from empty square"),
             Some(square_index) => {
-                assert!(
+                debug_assert!(
                     square_index == piece_index,
                     "attempted to remove wrong piece from square"
                 );

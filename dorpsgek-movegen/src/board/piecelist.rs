@@ -43,7 +43,7 @@ impl Piecelist {
     /// Panics if `piece_index` has a valid square.
     pub fn add_piece(&mut self, piece_index: PieceIndex, square: Square) {
         let piece_index = usize::from(piece_index.into_inner());
-        assert!(
+        debug_assert!(
             self.0[piece_index].is_none(),
             "attempted to add piece to occupied piece index {:?}",
             piece_index
@@ -59,7 +59,7 @@ impl Piecelist {
         match self.0[piece_index] {
             None => panic!("attempted to remove piece from empty square"),
             Some(square_index) => {
-                assert!(
+                debug_assert!(
                     square_index == square,
                     "attempted to remove wrong piece from square"
                 );

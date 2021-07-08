@@ -9,6 +9,10 @@ pub fn search_bench(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("kiwipete");
 
+    group.sample_size(5_000);
+    group.significance_level(0.005);
+    group.noise_threshold(0.025);
+
     let nodes = {
         let mut s = Search::new();
         s.search(&kiwipete, 3, -100_000, 100_000);
