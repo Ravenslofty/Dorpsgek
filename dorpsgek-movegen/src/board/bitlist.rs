@@ -18,7 +18,6 @@
 use super::index::PieceIndex;
 use crate::{colour::Colour, square::Square};
 use std::{
-    convert::TryFrom,
     fmt::Debug,
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Index, Not},
 };
