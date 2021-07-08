@@ -253,9 +253,15 @@ impl BoardData {
         );
 
         match piece {
-            Piece::Pawn => square
-                .pawn_attacks(Colour::from(bit))
-                .for_each(|dest| update(&mut self.bitlist, dest)),
+            Piece::Pawn => {
+                if bit.is_white() {
+                    leap(&mut self.bitlist, Direction::NorthEast, square);
+                    leap(&mut self.bitlist, Direction::NorthWest, square);
+                } else {
+                    leap(&mut self.bitlist, Direction::SouthEast, square);
+                    leap(&mut self.bitlist, Direction::SouthWest, square);
+                }
+            }
             Piece::Knight => {
                 leap(&mut self.bitlist, Direction::NorthNorthEast, square);
                 leap(&mut self.bitlist, Direction::EastNorthEast, square);
@@ -266,9 +272,16 @@ impl BoardData {
                 leap(&mut self.bitlist, Direction::WestNorthWest, square);
                 leap(&mut self.bitlist, Direction::NorthNorthWest, square);
             }
-            Piece::King => square
-                .king_attacks()
-                .for_each(|dest| update(&mut self.bitlist, dest)),
+            Piece::King => {
+                leap(&mut self.bitlist, Direction::North, square);
+                leap(&mut self.bitlist, Direction::NorthEast, square);
+                leap(&mut self.bitlist, Direction::East, square);
+                leap(&mut self.bitlist, Direction::SouthEast, square);
+                leap(&mut self.bitlist, Direction::South, square);
+                leap(&mut self.bitlist, Direction::SouthWest, square);
+                leap(&mut self.bitlist, Direction::West, square);
+                leap(&mut self.bitlist, Direction::NorthWest, square);
+            }
             Piece::Bishop => {
                 slide(&mut self.bitlist, &self.index, Direction::NorthEast, square);
                 slide(&mut self.bitlist, &self.index, Direction::SouthEast, square);
