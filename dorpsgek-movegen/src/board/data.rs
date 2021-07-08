@@ -199,8 +199,8 @@ impl BoardData {
         piece: Piece,
         add: bool,
     ) {
-        static DIRECTIONS: [Option<Direction>; 116] = [
-            // Knight @ 0
+        static DIRECTIONS: [Option<Direction>; 148] = [
+            // Knight (normal) @ 0
             Some(Direction::NorthNorthEast),
             Some(Direction::EastNorthEast),
             Some(Direction::EastSouthEast),
@@ -209,6 +209,46 @@ impl BoardData {
             Some(Direction::WestSouthWest),
             Some(Direction::WestNorthWest),
             Some(Direction::NorthNorthWest),
+            None,
+            // Knight (left edge) @ 9
+            Some(Direction::NorthNorthEast),
+            Some(Direction::EastNorthEast),
+            Some(Direction::EastSouthEast),
+            Some(Direction::SouthSouthEast),
+            None,
+            // Knight (right edge) @ 14
+            Some(Direction::SouthSouthWest),
+            Some(Direction::WestSouthWest),
+            Some(Direction::WestNorthWest),
+            Some(Direction::NorthNorthWest),
+            None,
+            // Knight (top edge) @ 19
+            Some(Direction::EastSouthEast),
+            Some(Direction::SouthSouthEast),
+            Some(Direction::SouthSouthWest),
+            Some(Direction::WestSouthWest),
+            None,
+            // Knight (bottom edge) @ 24
+            Some(Direction::NorthNorthEast),
+            Some(Direction::EastNorthEast),
+            Some(Direction::WestNorthWest),
+            Some(Direction::NorthNorthWest),
+            None,
+            // Knight (bottom left corner) @ 29
+            Some(Direction::NorthNorthEast),
+            Some(Direction::EastNorthEast),
+            None,
+            // Knight (bottom right corner) @ 32
+            Some(Direction::WestNorthWest),
+            Some(Direction::NorthNorthWest),
+            None,
+            // Knight (top left corner) @ 35
+            Some(Direction::SouthSouthEast),
+            Some(Direction::EastSouthEast),
+            None,
+            // Knight (top right corner) @ 38
+            Some(Direction::WestSouthWest),
+            Some(Direction::SouthSouthWest),
             None,
             // Bishop (normal) @ 0
             Some(Direction::NorthEast),
@@ -346,7 +386,7 @@ impl BoardData {
             None
         ];
 
-        const KNIGHT_ATTACKS: usize = 9;
+        const KNIGHT_ATTACKS: usize = 41;
         const BISHOP_ATTACKS: usize = 25;
         const ROOK_ATTACKS: usize = 33;
 
@@ -364,7 +404,16 @@ impl BoardData {
             // Pawn
             [0; 64],
             // Knight,
-            [0; 64],
+            [
+                29, 24, 24, 24, 24, 24, 24, 32,
+                 9,  0,  0,  0,  0,  0,  0, 14,
+                 9,  0,  0,  0,  0,  0,  0, 14,
+                 9,  0,  0,  0,  0,  0,  0, 14,
+                 9,  0,  0,  0,  0,  0,  0, 14,
+                 9,  0,  0,  0,  0,  0,  0, 14,
+                 9,  0,  0,  0,  0,  0,  0, 14,
+                35, 19, 19, 19, 19, 19, 19, 38,
+            ],
             // Bishop,
             [
                 17, 14, 14, 14, 14, 14, 14, 19,
@@ -424,16 +473,16 @@ impl BoardData {
             square.pawn_attacks(Colour::from(bit)).for_each(|dest| update(&mut self.bitlist, dest));
         } else if matches!(piece, Piece::Knight | Piece::King) {
             let mut offset = BASE[piece as usize] + OFFSET[piece as usize][square.into_inner() as usize];
-            while let Some(direction) = DIRECTIONS[offset] {
-                if let Some(dest) = square.travel(direction) {
+            while let Some(direction) = unsafe { DIRECTIONS.get_unchecked(offset) } {
+                if let Some(dest) = square.travel(*direction) {
                     update(&mut self.bitlist, dest);
                 }
                 offset += 1;
             }
         } else {
             let mut offset = BASE[piece as usize] + OFFSET[piece as usize][square.into_inner() as usize];
-            while let Some(direction) = DIRECTIONS[offset] {
-                for dest in Square16x8::from_square(square).ray_attacks(direction) {
+            while let Some(direction) = unsafe { DIRECTIONS.get_unchecked(offset) } {
+                for dest in Square16x8::from_square(square).ray_attacks(*direction) {
                     update(&mut self.bitlist, dest);
                     if self.index[dest].is_some() {
                         break;
