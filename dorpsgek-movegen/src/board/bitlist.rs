@@ -17,10 +17,7 @@
 
 use super::index::PieceIndex;
 use crate::{colour::Colour, square::Square};
-use std::{
-    fmt::Debug,
-    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Index, Not},
-};
+use std::{fmt::Debug, iter::FusedIterator, ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Index, Not}};
 
 /// A set of 32 bits, each representing a piece.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -74,6 +71,16 @@ impl Bitlist {
         #[allow(clippy::cast_possible_truncation)]
         let bit = self.0.trailing_zeros() as u8;
         unsafe { Some(PieceIndex::new_unchecked(bit)) }
+    }
+
+    /// Return the lowest set bit of a `Bitlist` as a `PieceIndex`.
+    pub unsafe fn peek_nonzero(self) -> PieceIndex {
+        if self.0 == 0 {
+            std::hint::unreachable_unchecked();
+        }
+        #[allow(clippy::cast_possible_truncation)]
+        let bit = self.0.trailing_zeros() as u8;
+        PieceIndex::new_unchecked(bit)
     }
 
     /// Return the lowest set bit of a `Bitlist` as a `PieceIndex`, if it exists, and clear that bit.
@@ -172,7 +179,14 @@ impl Iterator for BitlistIter {
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.0.count_ones() as usize, Some(self.0.count_ones() as usize))
+    }
 }
+
+impl ExactSizeIterator for BitlistIter {}
+impl FusedIterator for BitlistIter {}
 
 /// The main attack table array.
 #[allow(clippy::module_name_repetitions)]

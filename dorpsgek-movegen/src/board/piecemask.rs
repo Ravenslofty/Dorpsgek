@@ -100,9 +100,11 @@ impl Piecemask {
     ///
     /// Panics if adding a piece would give `colour` more than 16 pieces.
     pub fn add_piece(&mut self, piece: Piece, colour: Colour) -> PieceIndex {
-        let piece_index = (self.empty() & Bitlist::mask_from_colour(colour))
-            .peek()
-            .expect("no more room to add pieces");
+        // SAFETY: a standard chess board has 32 pieces, of which 16 are white and 16 are black.
+        // Here we have a 32-bit integer, of which 16 bits are white and 16 are black.
+        // Thus, any position where one side has more than 16 pieces is by the rules of chess impossible to reach,
+        // and thus every time this gets called there will be at least one empty bit.
+        let piece_index = unsafe { (self.empty() & Bitlist::mask_from_colour(colour)).peek_nonzero() };
         let yes = Bitlist::from(piece_index);
         let no = Bitlist::new();
 

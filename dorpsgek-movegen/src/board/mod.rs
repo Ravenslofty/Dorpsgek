@@ -165,15 +165,11 @@ impl Board {
     #[must_use]
     #[inline]
     pub fn illegal(&self) -> bool {
-        #[allow(clippy::option_if_let_else)]
-        if let Some(king_index) =
-            (self.data.kings() & self.data.pieces_of_colour(!self.side)).peek()
-        {
-            let king_square = self.data.square_of_piece(king_index);
-            return !self.data.attacks_to(king_square, self.side).empty();
-        }
-        // Not having a king is very definitely illegal.
-        false
+        let king_index = unsafe {
+            (self.data.kings() & self.data.pieces_of_colour(!self.side)).peek_nonzero()
+        };
+        let king_square = self.data.square_of_piece(king_index);
+        !self.data.attacks_to(king_square, self.side).empty()
     }
 
     /// Parse a position in Forsyth-Edwards Notation into a board.
@@ -419,9 +415,9 @@ impl Board {
         let mut info = PinInfo::new();
 
         let sliders = self.data.bishops() | self.data.rooks() | self.data.queens();
-        let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
-            .peek()
-            .unwrap();
+        let king_index = unsafe {
+            (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek_nonzero()
+        };
         let king_square = self.data.square_of_piece(king_index);
         let king_square_16x8 = Square16x8::from_square(king_square);
 
@@ -573,13 +569,15 @@ impl Board {
     #[allow(clippy::too_many_lines)]
     fn generate_single_check(&self, v: &mut ArrayVec<[Move; 256]>) {
         #[allow(clippy::unwrap_used)]
-        let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
-            .peek()
-            .unwrap();
+        let king_index = unsafe {
+            (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek_nonzero()
+        };
         let king_square = self.data.square_of_piece(king_index);
         let king_square_16x8 = Square16x8::from_square(king_square);
         let attacker_bit = self.data.attacks_to(king_square, !self.side);
-        let attacker_index = attacker_bit.peek().unwrap();
+        let attacker_index = unsafe {
+            attacker_bit.peek_nonzero()
+        };
         let attacker_piece = self.data.piece_from_bit(attacker_index);
         let attacker_square = self.data.square_of_piece(attacker_index);
         let attacker_direction = attacker_square.direction(king_square);
@@ -745,9 +743,9 @@ impl Board {
 
     fn generate_double_check(&self, v: &mut ArrayVec<[Move; 256]>) {
         #[allow(clippy::unwrap_used)]
-        let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
-            .peek()
-            .unwrap();
+        let king_index = unsafe {
+            (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek_nonzero()
+        };
         let king_square = self.data.square_of_piece(king_index);
         let mut attacker_bits = self.data.attacks_to(king_square, !self.side);
         let attacker1_index = attacker_bits.pop().unwrap();
@@ -890,6 +888,96 @@ impl Board {
         self.generate_pawn_enpassant(v, &pininfo);
     }
 
+    #[allow(clippy::missing_panics_doc, clippy::too_many_lines)]
+    pub fn generate_captures_incremental<'a>(&'a self, pininfo: &'a PinInfo) -> impl Iterator<Item=Move> + 'a {
+        let find_attackers = move |dest: Square| {
+            let attacks = self.data.attacks_to(dest, self.side);
+
+            let pawn_captures = (attacks & self.data.pawns())
+            .into_iter()
+            .filter(move |_from| Rank::from(dest).is_relative_eighth(self.side))
+            .map(move |capturer| self.data.square_of_piece(capturer))
+            .filter(move |from| {
+                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
+            })
+            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
+
+            let knight_captures = (attacks & self.data.knights())
+            .into_iter()
+            .map(move |capturer| self.data.square_of_piece(capturer))
+            .filter(move |from| {
+                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
+            })
+            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
+
+            let bishop_captures = (attacks & self.data.bishops())
+            .into_iter()
+            .map(move |capturer| self.data.square_of_piece(capturer))
+            .filter(move |from| {
+                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
+            })
+            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
+
+            let rook_captures = (attacks & self.data.rooks())
+            .into_iter()
+            .map(move |capturer| self.data.square_of_piece(capturer))
+            .filter(move |from| {
+                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
+            })
+            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
+
+            let queen_captures = (attacks & self.data.queens())
+            .into_iter()
+            .map(move |capturer| self.data.square_of_piece(capturer))
+            .filter(move |from| {
+                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
+            })
+            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
+
+            let king_captures = (attacks & self.data.kings())
+            .into_iter()
+            .filter(move |_piece| self.data.attacks_to(dest, !self.side).empty())
+            .map(move |capturer| self.data.square_of_piece(capturer))
+            .filter(move |from| {
+                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
+            })
+            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
+
+            pawn_captures
+            .chain(knight_captures)
+            .chain(bishop_captures)
+            .chain(rook_captures)
+            .chain(queen_captures)
+            .chain(king_captures)
+        };
+
+        let queen_captures = (self.data.pieces_of_colour(!self.side) & self.data.queens())
+        .into_iter()
+        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+
+        let rook_captures = (self.data.pieces_of_colour(!self.side) & self.data.rooks())
+        .into_iter()
+        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+
+        let bishop_captures = (self.data.pieces_of_colour(!self.side) & self.data.bishops())
+        .into_iter()
+        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+
+        let knight_captures = (self.data.pieces_of_colour(!self.side) & self.data.knights())
+        .into_iter()
+        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+
+        let pawn_captures = (self.data.pieces_of_colour(!self.side) & self.data.pawns())
+        .into_iter()
+        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+
+        queen_captures
+        .chain(rook_captures)
+        .chain(bishop_captures)
+        .chain(knight_captures)
+        .chain(pawn_captures)
+    }
+
     /// Generate a vector of moves on the board.
     ///
     /// # Panics
@@ -897,9 +985,9 @@ impl Board {
     #[allow(clippy::missing_inline_in_public_items)]
     pub fn generate(&self, v: &mut ArrayVec<[Move; 256]>) {
         // Unless something has gone very badly wrong we have to have a king.
-        let king_index = (self.data.kings() & Bitlist::mask_from_colour(self.side))
-            .peek()
-            .expect("side to move has no king");
+        let king_index = unsafe {
+            (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek_nonzero()
+        };
         let king_square = self.data.square_of_piece(king_index);
         let checks = self.data.attacks_to(king_square, !self.side);
 
@@ -934,7 +1022,7 @@ impl Board {
                 .data
                 .attacks_to(dest, self.side)
                 .and(!self.data.pawns())
-            //.and(!self.data.kings())
+                //.and(!self.data.kings())
             {
                 // It's illegal for kings to move to attacked squares; prune those out.
                 if self.data.piece_from_bit(attacker) == Piece::King
@@ -1004,6 +1092,23 @@ impl Board {
     pub fn square_of_piece(&self, bit: PieceIndex) -> Square {
         self.data.square_of_piece(bit)
     }
+
+    #[must_use]
+    pub fn in_check(&self) -> bool {
+        let king_index = unsafe {
+            (self.data.kings() & Bitlist::mask_from_colour(self.side)).peek_nonzero()
+        };
+        let king_square = self.data.square_of_piece(king_index);
+        !self.data.attacks_to(king_square, !self.side).empty()
+    }
+
+    #[must_use]
+    pub fn make_null(&self) -> Self {
+        let mut board = self.clone();
+        board.side = !board.side;
+        board.ep = None;
+        board
+    }
 }
 
 /* impl Drop for Board {
@@ -1013,3 +1118,5 @@ impl Board {
         }
     }
 } */
+
+
