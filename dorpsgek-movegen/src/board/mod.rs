@@ -889,93 +889,139 @@ impl Board {
     }
 
     #[allow(clippy::missing_panics_doc, clippy::too_many_lines)]
-    pub fn generate_captures_incremental<'a>(&'a self, pininfo: &'a PinInfo) -> impl Iterator<Item=Move> + 'a {
-        let find_attackers = move |dest: Square| {
-            let attacks = self.data.attacks_to(dest, self.side);
+    pub fn generate_captures_incremental<F: FnMut(Move) -> bool>(&self, mut f: F) {
+        let pininfo = self.discover_pinned_pieces();
 
-            let pawn_captures = (attacks & self.data.pawns())
-            .into_iter()
-            .filter(move |_from| Rank::from(dest).is_relative_eighth(self.side))
-            .map(move |capturer| self.data.square_of_piece(capturer))
-            .filter(move |from| {
-                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
-            })
-            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
-
-            let knight_captures = (attacks & self.data.knights())
-            .into_iter()
-            .map(move |capturer| self.data.square_of_piece(capturer))
-            .filter(move |from| {
-                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
-            })
-            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
-
-            let bishop_captures = (attacks & self.data.bishops())
-            .into_iter()
-            .map(move |capturer| self.data.square_of_piece(capturer))
-            .filter(move |from| {
-                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
-            })
-            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
-
-            let rook_captures = (attacks & self.data.rooks())
-            .into_iter()
-            .map(move |capturer| self.data.square_of_piece(capturer))
-            .filter(move |from| {
-                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
-            })
-            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
-
-            let queen_captures = (attacks & self.data.queens())
-            .into_iter()
-            .map(move |capturer| self.data.square_of_piece(capturer))
-            .filter(move |from| {
-                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
-            })
-            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
-
-            let king_captures = (attacks & self.data.kings())
-            .into_iter()
-            .filter(move |_piece| self.data.attacks_to(dest, !self.side).empty())
-            .map(move |capturer| self.data.square_of_piece(capturer))
-            .filter(move |from| {
-                pininfo.pins[self.data.piece_index(*from).unwrap().into_inner() as usize].map_or(true, |dir| from.direction(dest).map_or(false, |move_dir| dir == move_dir || dir == move_dir.opposite()))
-            })
-            .map(move |from| Move::new(from, dest, MoveType::Capture, None));
-
-            pawn_captures
-            .chain(knight_captures)
-            .chain(bishop_captures)
-            .chain(rook_captures)
-            .chain(queen_captures)
-            .chain(king_captures)
+        let mut try_move = |from: Square,
+        dest: Square,
+        kind: MoveType,
+        promotion_piece: Option<Piece>,
+        pininfo: &PinInfo
+        | {
+            if let Some(dir) = pininfo.pins[self.data.piece_index(from).unwrap().into_inner() as usize]
+            {
+                if let Some(move_dir) = from.direction(dest) {
+                    // Pinned slider can only move along pin ray.
+                    if dir == move_dir || dir == move_dir.opposite() {
+                        return f(Move::new(from, dest, kind, promotion_piece));
+                    }
+                }
+                // Pinned knight can't move.
+                return true;
+            }
+            f(Move::new(from, dest, kind, promotion_piece))
         };
 
-        let queen_captures = (self.data.pieces_of_colour(!self.side) & self.data.queens())
-        .into_iter()
-        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+        let mut find_attackers = |dest: Square| -> bool {
+            let attacks = self.data.attacks_to(dest, self.side);
+            for capturer in attacks & self.data.pawns() {
+                let from = self.data.square_of_piece(capturer);
+                if Rank::from(dest).is_relative_eighth(self.side) {
+                    if !try_move(
+                        from,
+                        dest,
+                        MoveType::CapturePromotion,
+                        Some(Piece::Queen),
+                        &pininfo,
+                    ) {
+                        return false;
+                    }
+                    if !try_move(
 
-        let rook_captures = (self.data.pieces_of_colour(!self.side) & self.data.rooks())
-        .into_iter()
-        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+                        from,
+                        dest,
+                        MoveType::CapturePromotion,
+                        Some(Piece::Knight),
+                        &pininfo,
+                    ) {
+                        return false;
+                    }
+                    if !try_move(
 
-        let bishop_captures = (self.data.pieces_of_colour(!self.side) & self.data.bishops())
-        .into_iter()
-        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+                        from,
+                        dest,
+                        MoveType::CapturePromotion,
+                        Some(Piece::Rook),
+                        &pininfo,
+                    ) {
+                        return false;
+                    }
+                    if !try_move(
 
-        let knight_captures = (self.data.pieces_of_colour(!self.side) & self.data.knights())
-        .into_iter()
-        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
+                        from,
+                        dest,
+                        MoveType::CapturePromotion,
+                        Some(Piece::Bishop),
+                        &pininfo,
+                    ) {
+                        return false;
+                    }
+                } else if !try_move( from, dest, MoveType::Capture, None, &pininfo) {
+                    return false;
+                }
+            }
+            for capturer in attacks & self.data.knights() {
+                let from = self.data.square_of_piece(capturer);
+                if !try_move( from, dest, MoveType::Capture, None, &pininfo) {
+                    return false;
+                }
+            }
+            for capturer in attacks & self.data.bishops() {
+                let from = self.data.square_of_piece(capturer);
+                if !try_move( from, dest, MoveType::Capture, None, &pininfo) {
+                    return false;
+                }
+            }
+            for capturer in attacks & self.data.rooks() {
+                let from = self.data.square_of_piece(capturer);
+                if !try_move( from, dest, MoveType::Capture, None, &pininfo) {
+                    return false;
+                }
+            }
+            for capturer in attacks & self.data.queens() {
+                let from = self.data.square_of_piece(capturer);
+                if !try_move( from, dest, MoveType::Capture, None, &pininfo) {
+                    return false;
+                }
+            }
+            for capturer in attacks & self.data.kings() {
+                let from = self.data.square_of_piece(capturer);
+                if !self.data.attacks_to(dest, !self.side).empty() {
+                    // Moving into check is illegal.
+                    continue;
+                }
+                if !try_move( from, dest, MoveType::Capture, None, &pininfo) {
+                    return false;
+                }
+            }
+            true
+        };
 
-        let pawn_captures = (self.data.pieces_of_colour(!self.side) & self.data.pawns())
-        .into_iter()
-        .flat_map(move |victim| find_attackers(self.square_of_piece(victim)));
-
-        queen_captures
-        .chain(rook_captures)
-        .chain(bishop_captures)
-        .chain(knight_captures)
-        .chain(pawn_captures)
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.queens() {
+            if !find_attackers(self.square_of_piece(victim)) {
+                return;
+            }
+        }
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.rooks() {
+            if !find_attackers(self.square_of_piece(victim)) {
+                return;
+            }
+        }
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.bishops() {
+            if !find_attackers(self.square_of_piece(victim)) {
+                return;
+            }
+        }
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.knights() {
+            if !find_attackers(self.square_of_piece(victim)) {
+                return;
+            }
+        }
+        for victim in self.data.pieces_of_colour(!self.side) & self.data.pawns() {
+            if !find_attackers(self.square_of_piece(victim)) {
+                return;
+            }
+        }
     }
 
     /// Generate a vector of moves on the board.

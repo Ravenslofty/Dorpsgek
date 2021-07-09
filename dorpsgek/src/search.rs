@@ -34,21 +34,21 @@ impl Search {
             alpha = eval;
         }
 
-        let pininfo = board.discover_pinned_pieces();
-
-        for m in board.generate_captures_incremental(&pininfo) {
+        board.generate_captures_incremental(|m| {
             self.qnodes += 1;
 
             let board = board.make(m);
             let score = -self.quiesce(&board, -beta, -alpha);
 
             if score >= beta {
-                return beta;
+                alpha = beta;
+                return false;
             }
             if score > alpha {
                 alpha = score;
             }
-        }
+            true
+        });
 
         alpha
     }
@@ -60,14 +60,14 @@ impl Search {
 
         const R: i32 = 3;
 
-        /*if !board.in_check() && depth >= R {
+        if !board.in_check() && depth >= R {
             let board = board.make_null();
             let score = -self.search(&board, depth - 1 - R, -beta, -beta + 1);
 
             if score >= beta {
                 return beta;
             }
-        }*/
+        }
 
         let moves: [Move; 256] = [Move::default(); 256];
         let mut moves = ArrayVec::from(moves);
