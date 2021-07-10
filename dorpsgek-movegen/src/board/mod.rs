@@ -155,11 +155,6 @@ impl Board {
         }
     }
 
-    #[must_use]
-    pub const fn side(&self) -> Colour {
-        self.side
-    }
-
     /// Check if this board is illegal by seeing if the enemy king is attacked by friendly pieces.
     /// If it is, it implies the move the enemy made left them in check, which is illegal.
     #[must_use]
@@ -1135,8 +1130,23 @@ impl Board {
     }
 
     #[must_use]
+    pub fn piece_from_square(&self, square: Square) -> Option<Piece> {
+        self.data.piece_from_square(square)
+    }
+
+    #[must_use]
     pub fn square_of_piece(&self, bit: PieceIndex) -> Square {
         self.data.square_of_piece(bit)
+    }
+
+    #[must_use]
+    pub const fn ep(&self) -> Option<Square> {
+        self.ep
+    }
+
+    #[must_use]
+    pub const fn side(&self) -> Colour {
+        self.side
     }
 
     #[must_use]

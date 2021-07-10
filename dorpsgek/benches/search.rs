@@ -15,7 +15,7 @@ pub fn search_bench(c: &mut Criterion) {
 
     let nodes = {
         let mut s = Search::new();
-        s.search(&kiwipete, 3, -100_000, 100_000);
+        s.search_root(&kiwipete, 3);
         s.nodes() + s.qnodes()
     };
 
@@ -23,13 +23,13 @@ pub fn search_bench(c: &mut Criterion) {
     group.bench_with_input("kiwipete-3", &kiwipete, |b, board| {
         let mut s = Search::new();
         b.iter(|| {
-            s.search(board, 3, -100_000, 100_000);
+            s.search_root(board, 3);
         })
     });
 
     let nodes = {
         let mut s = Search::new();
-        s.search(&kiwipete, 4, -100_000, 100_000);
+        s.search_root(&kiwipete, 4);
         s.nodes() + s.qnodes()
     };
 
@@ -37,7 +37,7 @@ pub fn search_bench(c: &mut Criterion) {
     group.bench_with_input("kiwipete-4", &kiwipete, |b, board| {
         let mut s = Search::new();
         b.iter(|| {
-            s.search(board, 4, -100_000, 100_000);
+            s.search_root(board, 4);
         })
     });
 

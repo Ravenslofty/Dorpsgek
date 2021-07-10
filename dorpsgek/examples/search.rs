@@ -10,7 +10,7 @@ fn main() {
     let mut s = Search::new();
     let start = Instant::now();
     for depth in 1..=9 {
-        let score = s.search(&board, depth, -100_000, 100_000);
+        let score = s.search_root(&board, depth);
         let now = Instant::now().duration_since(start);
         println!(
             "{} {:.2} {} {}",

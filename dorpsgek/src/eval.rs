@@ -1,4 +1,4 @@
-use dorpsgek_movegen::{Board, Colour, Piece, Square};
+use dorpsgek_movegen::{Board, Colour, Move, MoveType, Piece, Square};
 
 pub struct Eval {
     params: [f64; 5 + 4 + 4],
@@ -62,6 +62,41 @@ impl Eval {
             -score
         } else {
             score
+        }
+    }
+
+    pub fn update_eval(&self, board: &Board, m: &Move, old_score: i32) -> i32 {
+        let from_piece = board.piece_from_square(m.from).unwrap();
+        let from_pst = self.piece_square_value(from_piece, m.from);
+        let dest_pst = self.piece_square_value(from_piece, m.dest);
+        match m.kind {
+            MoveType::Normal | MoveType::DoublePush => -old_score + from_pst - dest_pst,
+            MoveType::Capture => {
+                let dest_piece = board.piece_from_square(m.dest).unwrap();
+                -old_score + from_pst - dest_pst - self.piece_square_value(dest_piece, m.dest)
+            },
+            MoveType::Castle => {
+                if m.dest > m.from {
+                    let rook_from = m.dest.east().unwrap();
+                    let rook_dest = m.dest.west().unwrap();
+                    -old_score + from_pst - dest_pst + self.piece_square_value(Piece::Rook, rook_from) - self.piece_square_value(Piece::Rook, rook_dest)
+                } else {
+                    let rook_from = m.dest.west().unwrap().west().unwrap();
+                    let rook_dest = m.dest.east().unwrap();
+                    -old_score + from_pst - dest_pst + self.piece_square_value(Piece::Rook, rook_from) - self.piece_square_value(Piece::Rook, rook_dest)
+                }
+            }
+            MoveType::EnPassant => {
+                let dest_piece = board.ep().unwrap().relative_south(board.side()).unwrap();
+                -old_score + from_pst - dest_pst - self.piece_square_value(Piece::Pawn, dest_piece)
+            },
+            MoveType::Promotion => {
+                -old_score + from_pst - self.piece_square_value(m.prom.unwrap(), m.dest)
+            },
+            MoveType::CapturePromotion => {
+                let dest_piece = board.piece_from_square(m.dest).unwrap();
+                -old_score + from_pst - self.piece_square_value(m.prom.unwrap(), m.dest) - self.piece_square_value(dest_piece, m.dest)
+            },
         }
     }
 
