@@ -36,6 +36,13 @@ impl Search {
             self.qnodes += 1;
 
             let eval = self.eval.update_eval(board, &m, eval);
+
+            // Pre-empt stand pat by skipping moves with bad evaluation.
+            // One can think of this as delta pruning, with the delta being zero.
+            if eval >= -alpha {
+                return true;
+            }
+
             let board = board.make(m);
             let score = -self.quiesce(&board, -beta, -alpha, eval);
 
