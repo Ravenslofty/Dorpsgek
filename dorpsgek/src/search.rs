@@ -116,7 +116,6 @@ impl Search {
 
     pub fn search_root(&mut self, board: &Board, depth: i32, pv: &mut ArrayVec<[Move; 32]>) -> i32 {
         let eval = self.eval.eval(board);
-        println!("# {:?}", eval);
         self.search(board, depth, -100_000, 100_000, &eval, pv, MATE_VALUE)
     }
 
