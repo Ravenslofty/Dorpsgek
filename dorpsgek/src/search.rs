@@ -3,6 +3,8 @@ use tinyvec::ArrayVec;
 
 use crate::eval::{Eval, EvalState};
 
+const MATE_VALUE: i32 = 10_000;
+
 pub struct Search {
     eval: Eval,
     nodes: u64,
@@ -56,7 +58,7 @@ impl Search {
         alpha
     }
 
-    fn search(&mut self, board: &Board, depth: i32, mut alpha: i32, beta: i32, eval: &EvalState, pv: &mut ArrayVec<[Move; 32]>) -> i32 {
+    fn search(&mut self, board: &Board, depth: i32, mut alpha: i32, beta: i32, eval: &EvalState, pv: &mut ArrayVec<[Move; 32]>, mate: i32) -> i32 {
         if depth <= 0 {
             pv.set_len(0);
             return self.quiesce(board, alpha, beta, eval);
@@ -67,7 +69,7 @@ impl Search {
         if !board.in_check() && depth >= R {
             let board = board.make_null();
             let mut child_pv = ArrayVec::new();
-            let score = -self.search(&board, depth - 1 - R, -beta, -beta + 1, eval, &mut child_pv);
+            let score = -self.search(&board, depth - 1 - R, -beta, -beta + 1, eval, &mut child_pv, mate);
 
             if score >= beta {
                 return beta;
@@ -79,13 +81,22 @@ impl Search {
         moves.set_len(0);
         board.generate(&mut moves);
 
+        // Is this checkmate or stalemate?
+        if moves.is_empty() {
+            if board.in_check() {
+                return -mate;
+            } else {
+                return 0;
+            }
+        }
+
         for m in moves {
             self.nodes += 1;
 
             let mut child_pv = ArrayVec::new();
             let eval = self.eval.update_eval(board, &m, eval);
             let board = board.make(m);
-            let score = -self.search(&board, depth - 1, -beta, -alpha, &eval, &mut child_pv);
+            let score = -self.search(&board, depth - 1, -beta, -alpha, &eval, &mut child_pv, mate - 1);
 
             if score >= beta {
                 return beta;
@@ -106,7 +117,7 @@ impl Search {
     pub fn search_root(&mut self, board: &Board, depth: i32, pv: &mut ArrayVec<[Move; 32]>) -> i32 {
         let eval = self.eval.eval(board);
         println!("# {:?}", eval);
-        self.search(board, depth, -100_000, 100_000, &eval, pv)
+        self.search(board, depth, -100_000, 100_000, &eval, pv, MATE_VALUE)
     }
 
     pub fn nodes(&self) -> u64 {
