@@ -1,6 +1,8 @@
+use std::convert::TryInto;
+
 use dorpsgek_movegen::{Board, Colour, Move, MoveType, Piece, Square};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EvalState {
     pst_mg: i32,
     pst_eg: i32,
@@ -219,6 +221,42 @@ impl Eval {
                 0, 1, 1, 2, 4, 0
             ],
         }
+    }
+
+    pub fn from_tuning_weights(&mut self, weights: &[i32]) {
+        *self = Self {
+            mat_mg: weights[0..=5].try_into().unwrap(),
+            mat_eg: weights[6..=11].try_into().unwrap(),
+            pst_mg: [
+                // Pawn
+                weights[11..75].try_into().unwrap(),
+                // Knight
+                weights[75..139].try_into().unwrap(),
+                // Bishop
+                weights[139..203].try_into().unwrap(),
+                // Rook
+                weights[203..267].try_into().unwrap(),
+                // Queen
+                weights[267..331].try_into().unwrap(),
+                // King
+                weights[331..395].try_into().unwrap()
+            ],
+            pst_eg: [
+                // Pawn
+                weights[395..459].try_into().unwrap(),
+                // Knight
+                weights[459..523].try_into().unwrap(),
+                // Bishop
+                weights[523..587].try_into().unwrap(),
+                // Rook
+                weights[587..651].try_into().unwrap(),
+                // Queen
+                weights[651..715].try_into().unwrap(),
+                // King
+                weights[715..779].try_into().unwrap()
+            ],
+            phase: weights[779..785].try_into().unwrap()
+        };
     }
 
     pub fn eval(&self, board: &Board) -> EvalState {

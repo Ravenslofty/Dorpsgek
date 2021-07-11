@@ -126,4 +126,8 @@ impl Search {
     pub fn qnodes(&self) -> u64 {
         self.qnodes
     }
+
+    pub fn from_tuning_weights(&mut self, weights: &[i32]) {
+        self.eval.from_tuning_weights(weights);
+    }
 }

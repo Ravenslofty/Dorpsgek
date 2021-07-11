@@ -8,7 +8,9 @@ edition = "2018"
 
 [dependencies]
 dorpsgek-movegen = { path = "../dorpsgek-movegen" }
+rand = "0.8"
 tinyvec = "0.3"
+revad = { path = "../revad" }
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["real_blackbox"]}
