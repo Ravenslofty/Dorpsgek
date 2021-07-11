@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use dorpsgek_movegen::Board;
 use dorpsgek::Search;
+use tinyvec::ArrayVec;
 
 pub fn search_bench(c: &mut Criterion) {
     let kiwipete =
@@ -15,29 +16,33 @@ pub fn search_bench(c: &mut Criterion) {
 
     let nodes = {
         let mut s = Search::new();
-        s.search_root(&kiwipete, 3);
+        let mut pv = ArrayVec::new();
+        s.search_root(&kiwipete, 3, &mut pv);
         s.nodes() + s.qnodes()
     };
 
     group.throughput(Throughput::Elements(nodes));
     group.bench_with_input("kiwipete-3", &kiwipete, |b, board| {
         let mut s = Search::new();
+        let mut pv = ArrayVec::new();
         b.iter(|| {
-            s.search_root(board, 3);
+            s.search_root(board, 3, &mut pv);
         })
     });
 
     let nodes = {
         let mut s = Search::new();
-        s.search_root(&kiwipete, 4);
+        let mut pv = ArrayVec::new();
+        s.search_root(&kiwipete, 4, &mut pv);
         s.nodes() + s.qnodes()
     };
 
     group.throughput(Throughput::Elements(nodes));
     group.bench_with_input("kiwipete-4", &kiwipete, |b, board| {
         let mut s = Search::new();
+        let mut pv = ArrayVec::new();
         b.iter(|| {
-            s.search_root(board, 4);
+            s.search_root(board, 4, &mut pv);
         })
     });
 

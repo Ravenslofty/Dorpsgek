@@ -56,8 +56,9 @@ impl Search {
         alpha
     }
 
-    fn search(&mut self, board: &Board, depth: i32, mut alpha: i32, beta: i32, eval: &EvalState) -> i32 {
+    fn search(&mut self, board: &Board, depth: i32, mut alpha: i32, beta: i32, eval: &EvalState, pv: &mut ArrayVec<[Move; 32]>) -> i32 {
         if depth <= 0 {
+            pv.set_len(0);
             return self.quiesce(board, alpha, beta, eval);
         }
 
@@ -65,7 +66,8 @@ impl Search {
 
         if !board.in_check() && depth >= R {
             let board = board.make_null();
-            let score = -self.search(&board, depth - 1 - R, -beta, -beta + 1, eval);
+            let mut child_pv = ArrayVec::new();
+            let score = -self.search(&board, depth - 1 - R, -beta, -beta + 1, eval, &mut child_pv);
 
             if score >= beta {
                 return beta;
@@ -80,21 +82,31 @@ impl Search {
         for m in moves {
             self.nodes += 1;
 
+            let mut child_pv = ArrayVec::new();
             let eval = self.eval.update_eval(board, &m, eval);
             let board = board.make(m);
-            alpha = alpha.max(-self.search(&board, depth - 1, -beta, -alpha, &eval));
+            let score = -self.search(&board, depth - 1, -beta, -alpha, &eval, &mut child_pv);
 
-            if alpha >= beta {
+            if score >= beta {
                 return beta;
+            }
+            if score > alpha {
+                alpha = score;
+                pv.set_len(0);
+                pv.push(m);
+                for m in child_pv {
+                    pv.push(m);
+                }
             }
         }
 
         alpha
     }
 
-    pub fn search_root(&mut self, board: &Board, depth: i32) -> i32 {
+    pub fn search_root(&mut self, board: &Board, depth: i32, pv: &mut ArrayVec<[Move; 32]>) -> i32 {
         let eval = self.eval.eval(board);
-        self.search(board, depth, -100_000, 100_000, &eval)
+        println!("# {:?}", eval);
+        self.search(board, depth, -100_000, 100_000, &eval, pv)
     }
 
     pub fn nodes(&self) -> u64 {
