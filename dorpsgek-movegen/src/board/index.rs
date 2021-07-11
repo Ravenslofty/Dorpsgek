@@ -49,6 +49,15 @@ impl PieceIndex {
     pub const fn is_black(self) -> bool {
         self.into_inner() >= 16
     }
+
+    #[must_use]
+    pub const fn colour(self) -> Colour {
+        if self.is_white() {
+            Colour::White
+        } else {
+            Colour::Black
+        }
+    }
 }
 
 impl TryFrom<u8> for PieceIndex {

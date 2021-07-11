@@ -24,9 +24,10 @@ pub fn divide(board: &Board, depth: u32) -> u64 {
 }
 
 fn main() {
-    let startpos = Board::from_fen("n1n5/1Pk5/8/8/8/8/8/4KNrN w - - 0 2").unwrap();
+    let startpos = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
 
-    let depth = 1;
+    let depth = 5;
     let nodes = divide(&startpos, depth);
+    println!("size of board: {}", std::mem::size_of::<Board>());
     println!("Perft {}: {}", depth, nodes);
 }
