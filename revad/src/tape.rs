@@ -90,7 +90,7 @@ impl<'t> Var<'t> {
             tape: self.tape,
             value: self.value.abs(),
             index: self.tape.push1(
-                self.index, self.value / self.value.abs()
+                self.index, if self.value.is_sign_negative() { -1.0 } else { 1.0 }
             ),
         }
     }

@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use dorpsgek_movegen::{Board, Colour, Move, Piece, Square};
 use rand::prelude::*;
-use revad::tape::{Grad, Tape, Var};
+use revad::tape::{Tape, Var};
 use tinyvec::ArrayVec;
 
 use crate::Search;
@@ -55,8 +55,8 @@ pub struct Eval<'a> {
 }
 
 impl<'a> Eval<'a> {
-    pub fn gradient(board: &Board, tape: &'a Tape, weights: &'a [Var<'a>]) -> (f64, Grad) {
-        let weights = Self {
+    pub fn from_tuning_weights(weights: &'a [Var<'a>]) -> Self {
+        Self {
             mat_mg: weights[0..=5].try_into().unwrap(),
             mat_eg: weights[6..=11].try_into().unwrap(),
             pst_mg: [
@@ -88,17 +88,18 @@ impl<'a> Eval<'a> {
                 weights[715..779].try_into().unwrap()
             ],
             phase: weights[779..785].try_into().unwrap()
-        };
+        }
+    }
 
+    pub fn gradient(&'a self, board: &Board, tape: &'a Tape) -> Var<'a> {
         let mut score = EvalState::new(tape);
 
         for piece in board.pieces() {
             let square = board.square_of_piece(piece);
-            score.add_piece(&weights, board.piece_from_bit(piece), square, piece.colour());
+            score.add_piece(self, board.piece_from_bit(piece), square, piece.colour());
         }
 
-        let score = score.get(&weights, tape, board.side());
-        (score.value(), score.abs().grad())
+        score.get(self, tape, board.side()).abs()
     }
 }
 
@@ -109,14 +110,124 @@ pub struct Tune<'a> {
 
 impl<'a> Tune<'a> {
     pub fn new(tape: &'a Tape) -> Self {
-        let mut weights = [tape.var(0.0); 786];
-
-        for w in &mut weights {
-            *w = tape.var(random());
-        }
-
-        w[0] = 100.0;
-        w[1] =
+        let weights = [
+            // Midgame Material
+            tape.var(100_f64), tape.var(300_f64), tape.var(300_f64), tape.var(500_f64), tape.var(900_f64),  tape.var(0_f64),
+            // Endgame Material
+            tape.var(100_f64), tape.var(300_f64), tape.var(300_f64), tape.var(500_f64),  tape.var(900_f64),  tape.var(0_f64),
+            // Midgame PST
+                // Pawns
+                tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),
+                // Knights
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),
+                // Bishops
+                tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                // Rooks
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                // Queens
+                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
+                tape.var(random()),   tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                // Kings
+                tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),
+            // Endgame PST
+                // Pawns
+                tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),
+                tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),
+                // Knights
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                // Bishops
+                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),
+                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
+                // Rooks
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()), tape.var(random()),
+                // Queens
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                // Kings
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),
+                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
+                tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+            // Phase
+            tape.var(0_f64), tape.var(1_f64), tape.var(1_f64), tape.var(2_f64), tape.var(4_f64), tape.var(0_f64),
+        ];
 
         Self {
             learning_rate: 0.7,
@@ -127,13 +238,17 @@ impl<'a> Tune<'a> {
     pub fn tune(&mut self, tape: &'a Tape) {
         let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
 
-        'main_loop: for n in 0..5_000 {
-            println!("Iter {}", n);
-            print!("Piece values: ");
-            for w in &self.weights[0..6] {
-                print!("{:.0} ", w.value());
+        for n in 0..5_000 {
+            print!("Iter {:>5}: ", n);
+            print!("piece values: [");
+            for w in &self.weights[0..5] {
+                print!("{:>4.0} ", w.value());
             }
-            println!();
+            print!("] [");
+            for w in &self.weights[6..11] {
+                print!("{:>4.0} ", w.value());
+            }
+            print!("]; ");
 
             // Make a random legal move on the board
             let moves: [Move; 256] = [Move::default(); 256];
@@ -141,7 +256,6 @@ impl<'a> Tune<'a> {
             moves.set_len(0);
             board.generate(&mut moves);
             let m = *moves.iter().choose(&mut thread_rng()).unwrap();
-            println!("Trying move {}", m);
             let mut board = board.make(m);
 
             // Initialise the search.
@@ -153,46 +267,122 @@ impl<'a> Tune<'a> {
             s.from_tuning_weights(&weights);
 
             // Then collect temporal differences.
-            let mut scores = [0.0; 12];
+            let eval = Eval::from_tuning_weights(&self.weights);
             let mut grads = [None, None, None, None, None, None, None, None, None, None, None, None];
+            let mut positions = 0;
 
-            for n in 0..12 {
+            for grad in &mut grads {
                 let mut pv = ArrayVec::new();
                 pv.set_len(0);
-                let _score = s.search_root(&board, 4, &mut pv);
+                let _score = s.search_root(&board, 2, &mut pv);
+
+                positions += 1;
 
                 if pv.is_empty() {
-                    continue 'main_loop;
+                    if board.side() == Colour::White {
+                        *grad = Some(tape.var(-10_000.0));
+                    } else {
+                        *grad = Some(tape.var(10_000.0));
+                    }
+                    break;
                 }
 
                 let mut pv_board = board.clone();
                 for m in pv {
                     pv_board = pv_board.make(m);
                 }
-                let (score, g) = Eval::gradient(&pv_board, tape, &self.weights);
-                scores[n] = score;
-                grads[n] = Some(g);
+
+                *grad = Some(eval.gradient(&pv_board, tape));
+
                 board = board.make(pv[0]);
             }
 
-            let mut diffs = [0.0; 12];
-            let mut sum_diff = 0.0;
+            let mut sum_diff = tape.var(0.0);
 
-            for n in 1..12 {
-                diffs[n] = scores[n] - scores[n - 1];
-                sum_diff += scores[n] - scores[n - 1];
+            for n in 1..positions {
+                sum_diff = sum_diff + (grads[n].unwrap() - grads[n - 1].unwrap()) * tape.var(self.learning_rate.powi(n as i32));
             }
 
-            println!("error: {}", sum_diff);
+            println!("err: {:<5.1}", sum_diff.value());
 
-            for (_index, weight) in self.weights.iter_mut().enumerate() {
-                let mut sum = 0.0;
-                for (n, grad) in grads.iter_mut().enumerate() {
-                    let grad = grad.as_ref().unwrap().wrt(*weight);
-                    sum += grad * self.learning_rate.powi(n as i32);
-                }
-                *weight = tape.var(weight.value() + sum);
+            let grad = sum_diff.grad();
+
+            for weight in &mut self.weights {
+                *weight = tape.var(weight.value() + 0.1*grad.wrt(*weight));
             }
         }
+
+        print!("mat_mg: [");
+        for w in &self.weights[0..6] {
+            print!("{:>4.0}, ", w.value());
+        }
+        println!("],");
+        print!("mat_eg: [");
+        for w in &self.weights[6..12] {
+            print!("{:>4.0}, ", w.value());
+        }
+        println!("],");
+        println!("pst_mg: [");
+        println!("// Pawns");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[12+rank*8..20+rank*8] {
+                print!("{:>4.0}, ", w.value());
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Knights");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[75+rank*8..83+rank*8] {
+                print!("{:>4.0}, ", w.value());
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Bishops");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[139+rank*8..147+rank*8] {
+                print!("{:>4.0}, ", w.value());
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Rooks");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[203+rank*8..211+rank*8] {
+                print!("{:>4.0}, ", w.value());
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Queens");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[267+rank*8..275+rank*8] {
+                print!("{:>4.0}, ", w.value());
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Kings");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[331+rank*8..339+rank*8] {
+                print!("{:>4.0}, ", w.value());
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("]");
     }
 }
