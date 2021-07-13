@@ -237,7 +237,20 @@ impl<'a> Tune<'a> {
         }
     }
 
-    fn dump(&self) {
+    pub fn get_state(&self) -> ([f64; 780], [f64; 780], [f64; 780]) {
+        let weights = self.weights.iter().map(|var| var.value()).collect::<Vec<_>>();
+        (weights.as_slice().try_into().unwrap(), self.m_t, self.v_t)
+    }
+
+    pub fn set_state(&mut self, tape: &'a Tape, weights: &[f64], m_t: &[f64], v_t: &[f64]) {
+        for i in 0..self.weights.len() {
+            self.weights[i] = tape.var(weights[i]);
+            self.m_t[i] = m_t[i];
+            self.v_t[i] = v_t[i];
+        }
+    }
+
+    pub fn dump(&self) {
         // Discover and remove means
         let mut mean_mg = [0.0; 6];
         let mut mean_eg = [0.0; 6];
@@ -392,25 +405,8 @@ impl<'a> Tune<'a> {
         println!("],");
     }
 
-    pub fn tune(&mut self, tape: &'a Tape) {
-        let boards = {
-            let mut boards = Vec::new();
-            let mut s = String::new();
-            let mut f = std::fs::File::open("ccrl4040_shuffled_5M.epd").unwrap();
-            f.read_to_string(&mut s).unwrap();
-
-            for line in s.lines() {
-                boards.push(Board::from_fen(line).unwrap());
-            }
-            boards
-        };
-
-        for n in 1..=50_000 {
-
-            if n % 1000 == 0 {
-                self.dump();
-            }
-
+    pub fn tune(&mut self, tape: &'a Tape, boards: &[Board], epoch: i32) {
+        for n in 1..=100 {
             let mut mean_mg = [0.0; 6];
             let mut mean_eg = [0.0; 6];
 
@@ -428,7 +424,7 @@ impl<'a> Tune<'a> {
             mean_eg[4] = self.weights[651..715].iter().map(|v| v.value()).sum::<f64>() / 64.0;
             mean_eg[5] = self.weights[715..779].iter().map(|v| v.value()).sum::<f64>() / 64.0;
 
-            print!("Iter {:>5}: ", n);
+            print!("Iter {:>5}: ", epoch*100 + n);
             print!("piece values: [");
             for (index, w) in self.weights[0..5].iter().enumerate() {
                 print!("{:>4.0} ", w.value() - mean_mg[index]);
