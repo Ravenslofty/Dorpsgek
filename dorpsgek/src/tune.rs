@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{convert::TryInto, io::Read};
 
 use dorpsgek_movegen::{Board, Colour, Move, Piece, Square};
 use rand::prelude::*;
@@ -23,10 +23,8 @@ impl<'a> EvalState<'a> {
         }
     }
 
-    pub fn get(&self, eval: &'a Eval, tape: &'a Tape, colour: Colour) -> Var<'a> {
-        let max_phase = tape.var(16.0)*eval.phase[0] + tape.var(4.0)*eval.phase[1] + tape.var(4.0)*eval.phase[2] + tape.var(4.0)*eval.phase[3] + tape.var(2.0)*eval.phase[4];
-
-        let score = ((self.pst_mg * self.phase) + (self.pst_eg * (max_phase - self.phase))) / max_phase;
+    pub fn get(&self, tape: &'a Tape, colour: Colour) -> Var<'a> {
+        let score = tape.var(1.0 / 24.0) * ((self.pst_mg * self.phase) + (self.pst_eg * (tape.var(24.0) - self.phase)));
         if colour == Colour::White {
             score
         } else {
@@ -55,7 +53,7 @@ pub struct Eval<'a> {
 }
 
 impl<'a> Eval<'a> {
-    pub fn from_tuning_weights(weights: &'a [Var<'a>]) -> Self {
+    pub fn from_tuning_weights(tape: &'a Tape, weights: &'a [Var<'a>]) -> Self {
         Self {
             mat_mg: weights[0..=5].try_into().unwrap(),
             mat_eg: weights[6..=11].try_into().unwrap(),
@@ -87,7 +85,7 @@ impl<'a> Eval<'a> {
                 // King
                 weights[715..779].try_into().unwrap()
             ],
-            phase: weights[779..785].try_into().unwrap()
+            phase: [tape.var(0.0), tape.var(1.0), tape.var(1.0), tape.var(2.0), tape.var(4.0), tape.var(0.0)]
         }
     }
 
@@ -99,13 +97,15 @@ impl<'a> Eval<'a> {
             score.add_piece(self, board.piece_from_bit(piece), square, piece.colour());
         }
 
-        score.get(self, tape, board.side()).abs()
+        (tape.var(0.00255) * score.get(tape, board.side())).tanh()
     }
 }
 
 pub struct Tune<'a> {
     learning_rate: f64,
-    weights: [Var<'a>; 786],
+    weights: [Var<'a>; 780],
+    m_t: [f64; 780],
+    v_t: [f64; 780],
 }
 
 impl<'a> Tune<'a> {
@@ -117,138 +117,329 @@ impl<'a> Tune<'a> {
             tape.var(100_f64), tape.var(300_f64), tape.var(300_f64), tape.var(500_f64),  tape.var(900_f64),  tape.var(0_f64),
             // Midgame PST
                 // Pawns
-                tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Knights
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Bishops
-                tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Rooks
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Queens
-                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
-                tape.var(random()),   tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Kings
-                tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
             // Endgame PST
                 // Pawns
-                tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),
-                tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Knights
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Bishops
-                tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),
-                tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Rooks
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()),   tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),   tape.var(random()), tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Queens
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
                 // Kings
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()), tape.var(random()),
-                tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()),
-                tape.var(random()), tape.var(random()),   tape.var(random()),  tape.var(random()),  tape.var(random()),   tape.var(random()),  tape.var(random()), tape.var(random()),
-                tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()), tape.var(random()),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
+                tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0), tape.var(0.0),
             // Phase
-            tape.var(0_f64), tape.var(1_f64), tape.var(1_f64), tape.var(2_f64), tape.var(4_f64), tape.var(0_f64),
+            //tape.var(0_f64), tape.var(1_f64), tape.var(1_f64), tape.var(2_f64), tape.var(4_f64), tape.var(0_f64),
         ];
 
         Self {
             learning_rate: 0.7,
-            weights
+            weights,
+            m_t: [0.0; 780],
+            v_t: [0.0; 780],
         }
     }
 
-    pub fn tune(&mut self, tape: &'a Tape) {
-        let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+    fn dump(&self) {
+        // Discover and remove means
+        let mut mean_mg = [0.0; 6];
+        let mut mean_eg = [0.0; 6];
 
-        for n in 0..5_000 {
+        mean_mg[0] = self.weights[12..75].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_mg[1] = self.weights[75..139].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_mg[2] = self.weights[139..203].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_mg[3] = self.weights[203..267].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_mg[4] = self.weights[267..331].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_mg[5] = self.weights[331..395].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+
+        mean_eg[0] = self.weights[395..459].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_eg[1] = self.weights[459..523].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_eg[2] = self.weights[523..587].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_eg[3] = self.weights[587..651].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_eg[4] = self.weights[651..715].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+        mean_eg[5] = self.weights[715..779].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+
+        print!("mat_mg: [");
+        for (index, w) in self.weights[0..6].iter().enumerate() {
+            print!("{:>4.0}, ", w.value() - mean_mg[index]);
+        }
+        println!("],");
+        print!("mat_eg: [");
+        for (index, w) in self.weights[6..12].iter().enumerate() {
+            print!("{:>4.0}, ", w.value() - mean_eg[index]);
+        }
+        println!("],");
+        println!("pst_mg: [");
+        println!("// Pawns");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[12+rank*8..20+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_mg[0]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Knights");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[75+rank*8..83+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_mg[1]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Bishops");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[139+rank*8..147+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_mg[2]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Rooks");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[203+rank*8..211+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_mg[3]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Queens");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[267+rank*8..275+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_mg[4]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Kings");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[331+rank*8..339+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_mg[5]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("],");
+        println!("pst_eg: [");
+        println!("// Pawns");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[395+rank*8..403+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_eg[0]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Knights");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[459+rank*8..467+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_eg[1]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Bishops");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[523+rank*8..531+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_eg[2]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Rooks");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[587+rank*8..595+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_eg[3]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Queens");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[651+rank*8..659+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_eg[4]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("// Kings");
+        println!("    [");
+        for rank in 0_usize..8 {
+            print!("        ");
+            for w in &self.weights[715+rank*8..723+rank*8] {
+                print!("{:>4.0}, ", w.value() - mean_eg[5]);
+            }
+            println!();
+        }
+        println!("    ],");
+        println!("],");
+    }
+
+    pub fn tune(&mut self, tape: &'a Tape) {
+        let boards = {
+            let mut boards = Vec::new();
+            let mut s = String::new();
+            let mut f = std::fs::File::open("ccrl4040_shuffled_5M.epd").unwrap();
+            f.read_to_string(&mut s).unwrap();
+
+            for line in s.lines() {
+                boards.push(Board::from_fen(line).unwrap());
+            }
+            boards
+        };
+
+        for n in 1..=50_000 {
+
+            if n % 1000 == 0 {
+                self.dump();
+            }
+
+            let mut mean_mg = [0.0; 6];
+            let mut mean_eg = [0.0; 6];
+
+            mean_mg[0] = self.weights[12..75].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_mg[1] = self.weights[75..139].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_mg[2] = self.weights[139..203].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_mg[3] = self.weights[203..267].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_mg[4] = self.weights[267..331].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_mg[5] = self.weights[331..395].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+
+            mean_eg[0] = self.weights[395..459].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_eg[1] = self.weights[459..523].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_eg[2] = self.weights[523..587].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_eg[3] = self.weights[587..651].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_eg[4] = self.weights[651..715].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+            mean_eg[5] = self.weights[715..779].iter().map(|v| v.value()).sum::<f64>() / 64.0;
+
             print!("Iter {:>5}: ", n);
             print!("piece values: [");
-            for w in &self.weights[0..5] {
-                print!("{:>4.0} ", w.value());
+            for (index, w) in self.weights[0..5].iter().enumerate() {
+                print!("{:>4.0} ", w.value() - mean_mg[index]);
             }
             print!("] [");
-            for w in &self.weights[6..11] {
-                print!("{:>4.0} ", w.value());
+            for (index, w) in self.weights[6..11].iter().enumerate() {
+                print!("{:>4.0} ", w.value() - mean_eg[index]);
             }
             print!("]; ");
+
+            let board = boards.iter().choose(&mut thread_rng()).unwrap();
 
             // Make a random legal move on the board
             let moves: [Move; 256] = [Move::default(); 256];
@@ -256,7 +447,7 @@ impl<'a> Tune<'a> {
             moves.set_len(0);
             board.generate(&mut moves);
             let m = *moves.iter().choose(&mut thread_rng()).unwrap();
-            let mut board = board.make(m);
+            let board = board.make(m);
 
             // Initialise the search.
             let mut weights = Vec::new();
@@ -267,122 +458,84 @@ impl<'a> Tune<'a> {
             s.from_tuning_weights(&weights);
 
             // Then collect temporal differences.
-            let eval = Eval::from_tuning_weights(&self.weights);
-            let mut grads = [None, None, None, None, None, None, None, None, None, None, None, None];
-            let mut positions = 0;
+            let eval = Eval::from_tuning_weights(tape, &self.weights);
 
-            for grad in &mut grads {
+            let mut scores = Vec::new();
+            let mut diffs = Vec::new();
+
+            let mut last_pv = ArrayVec::new();
+            last_pv.set_len(0);
+
+            scores.push(eval.gradient(&board, tape));
+            diffs.push(tape.var(0.0));
+
+            for position in 0..12 {
                 let mut pv = ArrayVec::new();
                 pv.set_len(0);
-                let _score = s.search_root(&board, 2, &mut pv);
-
-                positions += 1;
-
-                if pv.is_empty() {
-                    if board.side() == Colour::White {
-                        *grad = Some(tape.var(-10_000.0));
-                    } else {
-                        *grad = Some(tape.var(10_000.0));
-                    }
-                    break;
-                }
+                let score = s.search_root(&board, 2, &mut pv);
 
                 let mut pv_board = board.clone();
                 for m in pv {
                     pv_board = pv_board.make(m);
                 }
 
-                *grad = Some(eval.gradient(&pv_board, tape));
+                if pv.is_empty() {
+                    if score == 0 {
+                        scores.push(tape.var(0.0));
+                    } else if score > 0 {
+                        scores.push(tape.var(1.0));
+                    } else {
+                        scores.push(tape.var(-1.0));
+                    }
+                } else {
+                    scores.push(eval.gradient(&pv_board, tape));
+                }
 
-                board = board.make(pv[0]);
+                let diff = scores[scores.len() - 2] - scores[scores.len() - 1];
+                if diff.value() > 0.0 && !last_pv.is_empty() && pv[0] != last_pv[1] {
+                    // Last move was a blunder; don't learn from it.
+                    diffs.push(tape.var(0.0));
+                } else {
+                    diffs.push(diff);
+                }
+
+                if pv.is_empty() {
+                    break;
+                }
+
+                last_pv = pv;
             }
 
-            let mut sum_diff = tape.var(0.0);
+            let mut sum1 = tape.var(0.0);
 
-            for n in 1..positions {
-                sum_diff = sum_diff + (grads[n].unwrap() - grads[n - 1].unwrap()) * tape.var(self.learning_rate.powi(n as i32));
+            for n in 1..scores.len() {
+                let mut sum2 = tape.var(0.0);
+                for (m, diff) in diffs.iter().enumerate().take(scores.len()).skip(n) {
+                    sum2 = sum2 + tape.var(diff.value() * self.learning_rate.powi((m - n) as i32));
+                }
+                sum1 = sum1 + sum2 * scores[n];
             }
 
-            println!("err: {:<5.1}", sum_diff.value());
-
-            let grad = sum_diff.grad();
-
-            for weight in &mut self.weights {
-                *weight = tape.var(weight.value() + 0.1*grad.wrt(*weight));
-            }
-        }
-
-        print!("mat_mg: [");
-        for w in &self.weights[0..6] {
-            print!("{:>4.0}, ", w.value());
-        }
-        println!("],");
-        print!("mat_eg: [");
-        for w in &self.weights[6..12] {
-            print!("{:>4.0}, ", w.value());
-        }
-        println!("],");
-        println!("pst_mg: [");
-        println!("// Pawns");
-        println!("    [");
-        for rank in 0_usize..8 {
-            print!("        ");
-            for w in &self.weights[12+rank*8..20+rank*8] {
-                print!("{:>4.0}, ", w.value());
-            }
+            print!("err: {} ", sum1.value());
             println!();
-        }
-        println!("    ],");
-        println!("// Knights");
-        println!("    [");
-        for rank in 0_usize..8 {
-            print!("        ");
-            for w in &self.weights[75+rank*8..83+rank*8] {
-                print!("{:>4.0}, ", w.value());
+
+            let grad = sum1.grad();
+
+            const BETA1: f64 = 0.9;
+            const BETA2: f64 = 0.999;
+            const EPSILON: f64 = 1e-8;
+
+            for (index, weight) in self.weights.iter_mut().enumerate().skip(12) {
+                if !grad.wrt(*weight).is_nan() {
+                    self.m_t[index] = BETA1.mul_add(self.m_t[index], (1.0 - BETA1)*grad.wrt(*weight));
+                    self.v_t[index] = BETA2.mul_add(self.v_t[index], (1.0 - BETA2)*grad.wrt(*weight)*grad.wrt(*weight));
+
+                    let m_t = self.m_t[index] / (1.0 - BETA1.powi(n as i32));
+                    let v_t = self.v_t[index] / (1.0 - BETA2.powi(n as i32));
+
+                    *weight = tape.var(weight.value() - (100.0 * grad.wrt(*weight)) / (v_t.sqrt() + EPSILON) * m_t);
+                }
             }
-            println!();
         }
-        println!("    ],");
-        println!("// Bishops");
-        println!("    [");
-        for rank in 0_usize..8 {
-            print!("        ");
-            for w in &self.weights[139+rank*8..147+rank*8] {
-                print!("{:>4.0}, ", w.value());
-            }
-            println!();
-        }
-        println!("    ],");
-        println!("// Rooks");
-        println!("    [");
-        for rank in 0_usize..8 {
-            print!("        ");
-            for w in &self.weights[203+rank*8..211+rank*8] {
-                print!("{:>4.0}, ", w.value());
-            }
-            println!();
-        }
-        println!("    ],");
-        println!("// Queens");
-        println!("    [");
-        for rank in 0_usize..8 {
-            print!("        ");
-            for w in &self.weights[267+rank*8..275+rank*8] {
-                print!("{:>4.0}, ", w.value());
-            }
-            println!();
-        }
-        println!("    ],");
-        println!("// Kings");
-        println!("    [");
-        for rank in 0_usize..8 {
-            print!("        ");
-            for w in &self.weights[331+rank*8..339+rank*8] {
-                print!("{:>4.0}, ", w.value());
-            }
-            println!();
-        }
-        println!("    ],");
-        println!("]");
     }
 }

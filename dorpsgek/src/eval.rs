@@ -255,7 +255,7 @@ impl Eval {
                 // King
                 weights[715..779].try_into().unwrap()
             ],
-            phase: weights[779..785].try_into().unwrap()
+            phase: [0, 1, 1, 2, 4, 0]
         };
     }
 

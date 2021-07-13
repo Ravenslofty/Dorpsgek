@@ -104,6 +104,16 @@ impl<'t> Var<'t> {
             ),
         }
     }
+
+    pub fn tanh(self) -> Self {
+        Var {
+            tape: self.tape,
+            value: self.value.tanh(),
+            index: self.tape.push1(
+                self.index, 1.0 / self.value * self.value,
+            ),
+        }
+    }
 }
 
 impl<'t> ::std::ops::Neg for Var<'t> {
